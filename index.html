@@ -1,0 +1,64 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogicLab - Wokwi Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'JetBrains+Mono', monospace;
+            overflow: hidden;
+        }
+        
+        .wokwi-grid {
+            background-color: #1a1a1a;
+            background-image: 
+                linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222), 
+                linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+        }
+
+        .ic-body {
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+            box-shadow: 5px 5px 10px #0d0d0d, -2px -2px 5px #333;
+        }
+
+        .led-glow {
+            filter: blur(8px);
+            opacity: 0.8;
+        }
+        
+        .wire-path {
+            stroke-dasharray: 5;
+            animation: dash 10s linear infinite;
+        }
+        
+        @keyframes dash {
+            to { stroke-dashoffset: 100; }
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.37.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="wokwi-grid">
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
