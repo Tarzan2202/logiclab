@@ -4,11 +4,10 @@ import { GateType, EntityType, CircuitEntity } from './types';
 import SwitchInput from './components/SwitchInput';
 import Bulb from './components/Bulb';
 import { GATE_DATASHEET } from './gateData';
-import { getGateExplanation } from './services/geminiService';
 
 interface Wire {
-  from: string; // pin ID (e.g., 'pwr-0:vcc', 'gate-abc:ch:0:out')
-  to: string;   // pin ID
+  from: string; 
+  to: string;   
 }
 
 export default function App() {
@@ -16,7 +15,6 @@ export default function App() {
   const [wires, setWires] = useState<Wire[]>([]);
   const [activePin, setActivePin] = useState<string | null>(null);
   const [explanation, setExplanation] = useState<{title: string, desc: string, tt: string} | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
   const [pinPositions, setPinPositions] = useState<Record<string, {x: number, y: number}>>({});
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -30,7 +28,7 @@ export default function App() {
       setEntities([
         { id: 'pwr-0', type: EntityType.POWER, position: { x: 50, y: 50 } },
         { id: 'sw-0', type: EntityType.SWITCH_PANEL, position: { x: 50, y: 200 }, state: [false, false, false, false, false] },
-        { id: 'led-0', type: EntityType.LED_PANEL, position: { x: 800, y: 200 } }
+        { id: 'led-0', type: EntityType.LED_PANEL, position: { x: 850, y: 200 } }
       ]);
     }
   }, []);
@@ -102,7 +100,6 @@ export default function App() {
       const ent = entities.find(e => e.id === gateId);
       if (!ent || ent.type !== EntityType.GATE) return false;
 
-      // Power check
       const hasPower = isConnectedToVcc(`${gateId}:vcc`) && isConnectedToGnd(`${gateId}:gnd`);
       icPowerStates[gateId] = hasPower;
       if (!hasPower) {
@@ -134,7 +131,6 @@ export default function App() {
       const pinType = parts[1];
       const ent = entities.find(e => e.id === entId);
 
-      // 1. Check if this pin is a source
       if (ent) {
         if (ent.type === EntityType.POWER && pinType === 'vcc') return true;
         if (ent.type === EntityType.POWER && pinType === 'gnd') return false;
@@ -142,14 +138,12 @@ export default function App() {
           const swIdx = parseInt(parts[2]);
           return ent.state ? ent.state[swIdx] : false;
         }
-        // FIX: index 3 is 'out' for 'entId:ch:0:out'
         if (ent.type === EntityType.GATE && pinType === 'ch' && parts[3] === 'out') {
           const chIdx = parseInt(parts[2]);
           return evaluateGateChannel(entId, chIdx);
         }
       }
 
-      // 2. Propagate via wires
       if (visited.has(pinId)) return false;
       visited.add(pinId);
 
@@ -172,7 +166,6 @@ export default function App() {
          ledStates[ent.id] = getSignalState(`${ent.id}:in`);
        }
        if (ent.type === EntityType.GATE) {
-         // Force power check for IC indicators
          icPowerStates[ent.id] = isConnectedToVcc(`${ent.id}:vcc`) && isConnectedToGnd(`${ent.id}:gnd`);
        }
     });
@@ -206,16 +199,13 @@ export default function App() {
     setEntities(entities.map(e => (e.id === entId && e.state) ? { ...e, state: e.state.map((s: boolean, i: number) => i === idx ? !s : s) } : e));
   };
 
-  const handleGateInfo = async (type: GateType) => {
-    setIsSearching(true);
-    setExplanation(null);
-    const info = await getGateExplanation(type);
-    setExplanation(info ? { title: info.title, desc: info.description, tt: info.truthTable } : {
-      title: GATE_DATASHEET[type].title,
-      desc: GATE_DATASHEET[type].description,
-      tt: GATE_DATASHEET[type].truthTable,
+  const handleGateInfo = (type: GateType) => {
+    const info = GATE_DATASHEET[type];
+    setExplanation({
+      title: info.title,
+      desc: info.description,
+      tt: info.truthTable,
     });
-    setIsSearching(false);
   };
 
   const onMouseDown = (e: React.MouseEvent, id: string) => {
@@ -241,43 +231,85 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#0a0a0a] text-gray-300 font-mono select-none overflow-hidden" onMouseMove={onMouseMove} onMouseUp={() => setDraggingId(null)}>
-      <nav className="h-12 bg-[#1a1a1a] border-b border-[#333] flex items-center justify-between px-4 z-50 shadow-lg">
-        <div className="flex items-center gap-3">
-          <i className="fa-solid fa-microchip text-blue-500 text-lg"></i>
-          <span className="text-sm font-bold tracking-widest text-white uppercase">LogicLab Realistic v4.2</span>
+    <div className="h-screen w-screen flex flex-col bg-[#0d0f14] text-gray-300 font-mono select-none overflow-hidden" onMouseMove={onMouseMove} onMouseUp={() => setDraggingId(null)}>
+      {/* Navbar */}
+      <nav className="h-14 bg-[#141b26] border-b border-white/5 flex items-center justify-between px-6 z-50 shadow-2xl">
+        <div className="flex items-center gap-4">
+          <div className="bg-blue-500/10 p-2 rounded-lg border border-blue-500/20">
+            <i className="fa-solid fa-microchip text-blue-400 text-xl"></i>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs font-black tracking-widest text-white uppercase">LogicLab Realistic</span>
+            <span className="text-[9px] text-blue-400/60 uppercase font-bold">Simulator v4.5 Pro Edition</span>
+          </div>
         </div>
         <div className="flex gap-4">
-          <button onClick={() => { setEntities([]); setWires([]); }} className="text-[10px] bg-red-900/30 hover:bg-red-900/50 text-red-400 px-3 py-1 rounded border border-red-900/50 uppercase transition-all">Reset Circuit</button>
+          <button onClick={() => { setEntities([]); setWires([]); }} className="text-[10px] font-bold bg-red-500/10 hover:bg-red-500/20 text-red-400 px-4 py-2 rounded-md border border-red-500/20 uppercase transition-all flex items-center gap-2">
+            <i className="fa-solid fa-rotate-left"></i> รีเซ็ตวงจร
+          </button>
         </div>
       </nav>
 
       <div className="flex-1 flex overflow-hidden">
-        <aside className="w-56 bg-[#151515] border-r border-[#222] p-4 flex flex-col gap-6 overflow-y-auto z-40">
+        {/* Sidebar */}
+        <aside className="w-64 bg-[#141b26] border-r border-white/5 p-5 flex flex-col gap-8 overflow-y-auto z-40 shadow-2xl">
           <div>
-            <h3 className="text-[9px] text-gray-500 uppercase mb-4 font-bold tracking-widest">Logic Components</h3>
+            <h3 className="text-[10px] text-blue-400/70 uppercase mb-4 font-black tracking-widest flex items-center gap-2">
+              <i className="fa-solid fa-plus-circle"></i> อุปกรณ์ลอจิก
+            </h3>
             <div className="grid grid-cols-1 gap-2">
               {Object.values(GateType).map(gt => (
-                <button key={gt} onClick={() => addEntity(EntityType.GATE, gt)} className="bg-[#222] hover:bg-[#2a2a2a] border border-[#333] p-2 rounded text-[10px] font-bold text-left hover:text-blue-400 transition-all">Quad {gt} IC</button>
+                <button 
+                  key={gt} 
+                  onClick={() => addEntity(EntityType.GATE, gt)} 
+                  className="bg-white/5 hover:bg-white/10 border border-white/5 p-2.5 rounded-lg text-[10px] font-bold text-left flex justify-between items-center transition-all group"
+                >
+                  <span className="group-hover:text-blue-400">{GATE_DATASHEET[gt].model}</span>
+                  <span className="text-[8px] px-2 py-0.5 bg-black/40 rounded text-gray-500 group-hover:text-blue-400/60">{gt}</span>
+                </button>
               ))}
             </div>
           </div>
+          
           <div>
-             <h3 className="text-[9px] text-gray-500 uppercase mb-4 font-bold tracking-widest">Input/Output</h3>
+             <h3 className="text-[10px] text-blue-400/70 uppercase mb-4 font-black tracking-widest flex items-center gap-2">
+               <i className="fa-solid fa-bolt"></i> แหล่งจ่าย & แสดงผล
+             </h3>
              <div className="grid grid-cols-1 gap-2">
-                <button onClick={() => addEntity(EntityType.POWER)} className="bg-[#222] hover:bg-[#2a2a2a] border border-[#333] p-2 rounded text-[10px] font-bold text-red-400">Battery / 5V</button>
-                <button onClick={() => addEntity(EntityType.SWITCH_PANEL)} className="bg-[#222] hover:bg-[#2a2a2a] border border-[#333] p-2 rounded text-[10px] font-bold text-blue-400">Switch Array</button>
-                <button onClick={() => addEntity(EntityType.LED_PANEL)} className="bg-[#222] hover:bg-[#2a2a2a] border border-[#333] p-2 rounded text-[10px] font-bold text-green-400">LED Module</button>
+                <button onClick={() => addEntity(EntityType.POWER)} className="bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 p-2.5 rounded-lg text-[10px] font-bold text-red-400/80 transition-all flex items-center gap-3">
+                  <i className="fa-solid fa-car-battery"></i> แหล่งจ่ายไฟ 5V
+                </button>
+                <button onClick={() => addEntity(EntityType.SWITCH_PANEL)} className="bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/10 p-2.5 rounded-lg text-[10px] font-bold text-blue-400/80 transition-all flex items-center gap-3">
+                  <i className="fa-solid fa-toggle-on"></i> แผงสวิตช์อินพุต
+                </button>
+                <button onClick={() => addEntity(EntityType.LED_PANEL)} className="bg-green-500/5 hover:bg-green-500/10 border border-green-500/10 p-2.5 rounded-lg text-[10px] font-bold text-green-400/80 transition-all flex items-center gap-3">
+                  <i className="fa-solid fa-lightbulb"></i> โมดูลหลอดไฟ LED
+                </button>
              </div>
           </div>
-          <div className="mt-auto border-t border-[#222] pt-4">
-             <div className="bg-black/50 rounded-lg p-3 min-h-[140px] border border-[#222]">
-                <h4 className="text-[9px] text-blue-500 mb-2 font-bold uppercase tracking-widest">Debugger</h4>
-                {isSearching ? <div className="text-[8px] animate-pulse">ANALYZING...</div> : explanation ? <div className="space-y-1"><div className="text-[10px] text-white font-bold">{explanation.title}</div><div className="text-[8px] text-gray-400 leading-tight">{explanation.desc}</div></div> : <div className="text-[8px] text-gray-600">Click (?) on modules to view truth tables.</div>}
+
+          <div className="mt-auto pt-6 border-t border-white/5">
+             <div className="glass-panel rounded-xl p-4 min-h-[160px]">
+                <h4 className="text-[10px] text-blue-400 font-black uppercase tracking-widest mb-3">ข้อมูลไอซี</h4>
+                {explanation ? (
+                  <div className="space-y-2">
+                    <div className="text-[11px] text-white font-bold leading-tight">{explanation.title}</div>
+                    <div className="text-[9px] text-gray-400 leading-relaxed italic">{explanation.desc}</div>
+                    <div className="text-[8px] bg-black/60 p-2 rounded-lg font-mono text-green-400 whitespace-pre border border-white/5 shadow-inner">
+                      {explanation.tt}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-[9px] text-gray-500 leading-relaxed text-center py-4 flex flex-col gap-2">
+                    <i className="fa-solid fa-circle-question text-xl opacity-20"></i>
+                    คลิกที่เครื่องหมาย (?) บนตัวไอซี<br/>เพื่อดูตารางความจริง
+                  </div>
+                )}
              </div>
           </div>
         </aside>
 
+        {/* Workspace */}
         <main ref={workspaceRef} className="flex-1 relative wokwi-grid overflow-auto scrollbar-hide cursor-crosshair">
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-10 min-w-[2000px] min-h-[2000px]">
             {wires.map((wire, idx) => {
@@ -285,65 +317,75 @@ export default function App() {
               const end = pinPositions[wire.to];
               if (!start || !end) return null;
               const isHigh = circuitState.wireStates[idx];
-              let color = isHigh ? '#f97316' : '#262626';
-              if (wire.from.includes(':vcc') || wire.to.includes(':vcc')) color = isHigh ? '#ef4444' : '#450a0a';
-              if (wire.from.includes(':gnd') || wire.to.includes(':gnd')) color = '#000000';
+              let color = isHigh ? '#fb923c' : '#2d3748';
+              if (wire.from.includes(':vcc') || wire.to.includes(':vcc')) color = isHigh ? '#f87171' : '#7f1d1d';
+              if (wire.from.includes(':gnd') || wire.to.includes(':gnd')) color = '#1a202c';
+              
               return (
                 <g key={idx}>
-                  <path d={`M ${start.x} ${start.y} C ${start.x + 40} ${start.y}, ${end.x - 40} ${end.y}, ${end.x} ${end.y}`} fill="none" stroke={color} strokeWidth={isHigh ? "3" : "2"} className="transition-all duration-300 pointer-events-auto cursor-pointer hover:stroke-yellow-400" onClick={() => setWires(wires.filter((_, i) => i !== idx))} />
-                  {isHigh && <circle cx={start.x} cy={start.y} r="3" fill="#fb923c" className="animate-pulse" />}
+                  <path 
+                    d={`M ${start.x} ${start.y} C ${start.x + 40} ${start.y}, ${end.x - 40} ${end.y}, ${end.x} ${end.y}`} 
+                    fill="none" 
+                    stroke={color} 
+                    strokeWidth={isHigh ? "4" : "3"} 
+                    className={`transition-all duration-300 pointer-events-auto cursor-pointer hover:stroke-blue-400 ${isHigh ? 'wire-active' : ''}`} 
+                    onClick={() => setWires(wires.filter((_, i) => i !== idx))} 
+                  />
+                  {isHigh && <circle cx={start.x} cy={start.y} r="3" fill="#fb923c" className="animate-ping" />}
                 </g>
               );
             })}
-            {activePin && pinPositions[activePin] && <line x1={pinPositions[activePin].x} y1={pinPositions[activePin].y} x2={mousePos.x} y2={mousePos.y} stroke="white" strokeWidth="1" strokeDasharray="4" />}
+            {activePin && pinPositions[activePin] && (
+              <line x1={pinPositions[activePin].x} y1={pinPositions[activePin].y} x2={mousePos.x} y2={mousePos.y} stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeDasharray="6,4" />
+            )}
           </svg>
 
-          <div className="relative w-full h-full min-h-[2000px] min-w-[2000px]">
+          <div className="relative w-full h-full min-h-[2000px] min-w-[2000px] p-20">
             {entities.map(ent => (
-              <div key={ent.id} className="absolute ic-body rounded-md border-t border-white/10 shadow-2xl z-20 overflow-hidden" style={{ left: ent.position.x, top: ent.position.y }}>
-                <div onMouseDown={(e) => onMouseDown(e, ent.id)} className="bg-[#111] px-3 py-1 flex justify-between items-center cursor-move border-b border-white/5">
+              <div key={ent.id} className="absolute ic-body rounded-xl border border-white/5 shadow-2xl z-20 overflow-hidden min-w-[120px]" style={{ left: ent.position.x, top: ent.position.y }}>
+                <div onMouseDown={(e) => onMouseDown(e, ent.id)} className="bg-[#1a1a1a] px-3 py-1.5 flex justify-between items-center cursor-move border-b border-white/5">
                   <div className="flex items-center gap-2">
                     {ent.type === EntityType.GATE && (
-                      <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${circuitState.icPowerStates[ent.id] ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' : 'bg-red-900'}`} title="IC Power Status"></div>
+                      <div className={`w-2 h-2 rounded-full transition-all duration-300 ${circuitState.icPowerStates[ent.id] ? 'bg-green-500 shadow-[0_0_10px_#22c55e]' : 'bg-red-900 shadow-none'}`} title="IC Power Status"></div>
                     )}
-                    <span className="text-[7px] font-bold text-gray-500 uppercase tracking-widest">{ent.gateType || ent.type.replace('_', ' ')}</span>
+                    <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">{ent.gateType ? GATE_DATASHEET[ent.gateType].model : ent.type.replace('_', ' ')}</span>
                   </div>
                   <div className="flex gap-2">
-                    {ent.gateType && <button onClick={() => handleGateInfo(ent.gateType!)} className="text-[9px] text-blue-500 hover:text-white">?</button>}
-                    <button onClick={() => setEntities(entities.filter(x => x.id !== ent.id))} className="text-[9px] text-red-900 hover:text-red-500">×</button>
+                    {ent.gateType && <button onClick={() => handleGateInfo(ent.gateType!)} className="w-4 h-4 rounded-full bg-blue-500/10 text-blue-400 text-[9px] flex items-center justify-center hover:bg-blue-500/20">?</button>}
+                    <button onClick={() => setEntities(entities.filter(x => x.id !== ent.id))} className="w-4 h-4 rounded-full bg-red-500/10 text-red-500 text-[9px] flex items-center justify-center hover:bg-red-500/20">×</button>
                   </div>
                 </div>
 
-                <div className="p-4 flex flex-col gap-4 bg-[#1a1a1a]">
+                <div className="p-5 flex flex-col gap-4 bg-[#121212]/80">
                   {ent.type === EntityType.POWER && (
-                    <div className="flex gap-8 justify-center py-2">
-                      <div className="flex flex-col items-center gap-1">
-                        <div data-pin-id={`${ent.id}:vcc`} onClick={() => onPinClick(`${ent.id}:vcc`)} className="w-5 h-5 rounded-full border-2 border-black bg-red-600 cursor-pointer hover:scale-110 transition-transform shadow-inner"></div>
-                        <span className="text-[6px] text-red-600 font-bold">5V</span>
+                    <div className="flex gap-10 justify-center py-2">
+                      <div className="flex flex-col items-center gap-2">
+                        <div data-pin-id={`${ent.id}:vcc`} onClick={() => onPinClick(`${ent.id}:vcc`)} className="w-6 h-6 rounded-full border-2 border-black/50 bg-red-600 cursor-pointer hover:scale-125 transition-transform shadow-lg shadow-red-900/20"></div>
+                        <span className="text-[7px] text-red-500 font-black">5V VCC</span>
                       </div>
-                      <div className="flex flex-col items-center gap-1">
-                        <div data-pin-id={`${ent.id}:gnd`} onClick={() => onPinClick(`${ent.id}:gnd`)} className="w-5 h-5 rounded-full border-2 border-white/10 bg-black cursor-pointer hover:scale-110 transition-transform shadow-inner"></div>
-                        <span className="text-[6px] text-gray-600 font-bold">GND</span>
+                      <div className="flex flex-col items-center gap-2">
+                        <div data-pin-id={`${ent.id}:gnd`} onClick={() => onPinClick(`${ent.id}:gnd`)} className="w-6 h-6 rounded-full border-2 border-white/5 bg-[#0a0a0a] cursor-pointer hover:scale-125 transition-transform shadow-lg"></div>
+                        <span className="text-[7px] text-gray-500 font-black">GND</span>
                       </div>
                     </div>
                   )}
 
                   {ent.type === EntityType.GATE && (
                     <>
-                      <div className="flex justify-between items-center mb-1">
-                        <div data-pin-id={`${ent.id}:vcc`} onClick={() => onPinClick(`${ent.id}:vcc`)} className="w-3 h-3 bg-red-600 rounded-sm border border-black cursor-pointer hover:bg-white" title="IC VCC (Pin 14)"></div>
-                        <div data-pin-id={`${ent.id}:gnd`} onClick={() => onPinClick(`${ent.id}:gnd`)} className="w-3 h-3 bg-black rounded-sm border border-white/10 cursor-pointer hover:bg-white" title="IC GND (Pin 7)"></div>
+                      <div className="flex justify-between items-center px-1">
+                        <div data-pin-id={`${ent.id}:vcc`} onClick={() => onPinClick(`${ent.id}:vcc`)} className="w-3.5 h-3.5 bg-red-600 rounded-sm border border-black cursor-pointer hover:brightness-150 transition-all" title="Pin 14: VCC"></div>
+                        <div data-pin-id={`${ent.id}:gnd`} onClick={() => onPinClick(`${ent.id}:gnd`)} className="w-3.5 h-3.5 bg-black rounded-sm border border-white/10 cursor-pointer hover:brightness-150 transition-all" title="Pin 7: GND"></div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-3">
                         {[...Array(CHANNELS_PER_IC)].map((_, ch) => (
-                          <div key={ch} className="border border-white/5 p-2 rounded bg-black/20">
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-[5px] text-gray-600 uppercase">Unit {ch+1}</span>
-                              <div data-pin-id={`${ent.id}:ch:${ch}:out`} onClick={() => onPinClick(`${ent.id}:ch:${ch}:out`)} className="w-2.5 h-2.5 bg-blue-600 rounded-sm border border-black cursor-pointer hover:bg-white" title="Output"></div>
+                          <div key={ch} className="border border-white/5 p-2 rounded-lg bg-black/40 shadow-inner">
+                            <div className="flex justify-between items-center mb-1.5">
+                              <span className="text-[6px] text-gray-600 font-black">UNIT {ch+1}</span>
+                              <div data-pin-id={`${ent.id}:ch:${ch}:out`} onClick={() => onPinClick(`${ent.id}:ch:${ch}:out`)} className="w-3 h-3 bg-blue-500 rounded-sm border border-black cursor-pointer hover:brightness-150"></div>
                             </div>
-                            <div className="flex gap-1.5 justify-center">
+                            <div className="flex gap-2 justify-center">
                               {[0, 1].map(i => (ent.gateType === GateType.NOT && i > 0) ? null : (
-                                <div key={i} data-pin-id={`${ent.id}:ch:${ch}:in:${i}`} onClick={() => onPinClick(`${ent.id}:ch:${ch}:in:${i}`)} className="w-2.5 h-2.5 bg-orange-500 rounded-sm border border-black cursor-pointer hover:bg-white" title={`In ${i+1}`}></div>
+                                <div key={i} data-pin-id={`${ent.id}:ch:${ch}:in:${i}`} onClick={() => onPinClick(`${ent.id}:ch:${ch}:in:${i}`)} className="w-3 h-3 bg-orange-400 rounded-sm border border-black cursor-pointer hover:brightness-150" title={`Input ${i+1}`}></div>
                               ))}
                             </div>
                           </div>
@@ -353,10 +395,10 @@ export default function App() {
                   )}
 
                   {ent.type === EntityType.SWITCH_PANEL && (
-                    <div className="grid grid-cols-5 gap-2">
+                    <div className="flex gap-3 justify-center">
                        {ent.state?.map((val: boolean, idx: number) => (
                          <div key={idx} className="flex flex-col items-center gap-1">
-                            <div data-pin-id={`${ent.id}:sw:${idx}:out`} onClick={() => onPinClick(`${ent.id}:sw:${idx}:out`)} className="w-3 h-2 bg-blue-400 rounded-t-sm mb-[-2px] border border-black/50 cursor-pointer hover:bg-white" title="SW Out"></div>
+                            <div data-pin-id={`${ent.id}:sw:${idx}:out`} onClick={() => onPinClick(`${ent.id}:sw:${idx}:out`)} className="w-3.5 h-2.5 bg-blue-400 rounded-t-md mb-[-2px] border border-black/50 cursor-pointer hover:bg-white shadow-lg shadow-blue-500/10"></div>
                             <SwitchInput index={idx} isOn={val} onToggle={() => toggleSwitch(ent.id, idx)} />
                          </div>
                        ))}
@@ -364,8 +406,8 @@ export default function App() {
                   )}
 
                   {ent.type === EntityType.LED_PANEL && (
-                    <div className="flex flex-col items-center">
-                       <div data-pin-id={`${ent.id}:in`} onClick={() => onPinClick(`${ent.id}:in`)} className="w-4 h-3 bg-gray-700 rounded-sm mb-[-10px] relative z-20 cursor-pointer hover:bg-white border border-black/50"></div>
+                    <div className="flex flex-col items-center p-2">
+                       <div data-pin-id={`${ent.id}:in`} onClick={() => onPinClick(`${ent.id}:in`)} className="w-5 h-4 bg-gray-800 rounded-md mb-[-12px] relative z-20 cursor-pointer hover:bg-gray-700 border border-black/50 shadow-2xl"></div>
                        <Bulb isOn={circuitState.ledStates[ent.id] || false} />
                     </div>
                   )}
