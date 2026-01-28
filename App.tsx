@@ -20,35 +20,37 @@ export default function App() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [errorFlash, setErrorFlash] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
+  const errorTimeoutRef = useRef<number | null>(null);
 
   const CHANNELS_PER_IC = 4;
 
-  // Web Audio API for Error Sound
-  const playErrorSound = useCallback(() => {
+  const playErrorSound = useCallback((message: string) => {
+    if (errorTimeoutRef.current) window.clearTimeout(errorTimeoutRef.current);
+    
+    setErrorMessage(message);
+    setErrorFlash(true);
+    
     try {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
-
       oscillator.type = 'sawtooth';
-      oscillator.frequency.setValueAtTime(120, audioCtx.currentTime); // Low frequency buzz
+      oscillator.frequency.setValueAtTime(120, audioCtx.currentTime);
       oscillator.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.3);
-
       gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-
       oscillator.connect(gainNode);
       gainNode.connect(audioCtx.destination);
-
       oscillator.start();
       oscillator.stop(audioCtx.currentTime + 0.3);
-      
-      setErrorFlash(true);
-      setTimeout(() => setErrorFlash(false), 300);
-    } catch (e) {
-      console.error("Audio error", e);
-    }
+    } catch (e) {}
+
+    errorTimeoutRef.current = window.setTimeout(() => {
+      setErrorFlash(false);
+      setErrorMessage(null);
+    }, 3000);
   }, []);
 
   useEffect(() => {
@@ -88,20 +90,20 @@ export default function App() {
     updatePinPositions();
   }, [entities, wires, updatePinPositions]);
 
-  // Helper to identify pin type
   const getPinInfo = (pinId: string) => {
     const parts = pinId.split(':');
-    const type = parts[1]; // vcc, gnd, sw, ch, in
+    const type = parts[1]; 
     let functionalType: 'POWER' | 'GROUND' | 'INPUT' | 'OUTPUT' = 'INPUT';
-    
-    if (type === 'vcc') functionalType = 'POWER';
-    else if (type === 'gnd') functionalType = 'GROUND';
-    else if (type === 'sw') functionalType = 'OUTPUT';
-    else if (type === 'ch' && parts[3] === 'out') functionalType = 'OUTPUT';
-    else if (type === 'ch' && parts[3] === 'in') functionalType = 'INPUT';
-    else if (type === 'in') functionalType = 'INPUT';
+    let label = "พิน";
 
-    return { type, functionalType };
+    if (type === 'vcc') { functionalType = 'POWER'; label = "VCC (5V)"; }
+    else if (type === 'gnd') { functionalType = 'GROUND'; label = "GND (กราวด์)"; }
+    else if (type === 'sw') { functionalType = 'OUTPUT'; label = "เอาต์พุตสวิตช์"; }
+    else if (type === 'ch' && parts[3] === 'out') { functionalType = 'OUTPUT'; label = "เอาต์พุตไอซี"; }
+    else if (type === 'ch' && parts[3] === 'in') { functionalType = 'INPUT'; label = "อินพุตไอซี"; }
+    else if (type === 'in') { functionalType = 'INPUT'; label = "อินพุตหลอดไฟ"; }
+
+    return { type, functionalType, label };
   };
 
   const onPinClick = (pinId: string) => {
@@ -116,11 +118,11 @@ export default function App() {
       const pinA = getPinInfo(activePin);
       const pinB = getPinInfo(pinId);
 
-      // 1. Check GND wire limit (Only 1 wire per GND pin)
+      // 1. Check GND wire limit
       if (pinB.functionalType === 'GROUND') {
         const existingWire = wires.find(w => w.from === pinId || w.to === pinId);
         if (existingWire) {
-          playErrorSound();
+          playErrorSound("พิน GND นี้ถูกเชื่อมต่อแล้ว (จำกัด 1 เส้นต่อพิน เพื่อความระเบียบ)");
           setActivePin(null);
           return;
         }
@@ -128,37 +130,46 @@ export default function App() {
       if (pinA.functionalType === 'GROUND') {
         const existingWire = wires.find(w => w.from === activePin || w.to === activePin);
         if (existingWire) {
-          playErrorSound();
+          playErrorSound("พิน GND นี้ถูกเชื่อมต่อแล้ว (จำกัด 1 เส้นต่อพิน เพื่อความระเบียบ)");
           setActivePin(null);
           return;
         }
       }
 
-      // 2. Validate "Dangerous" connections (Short circuits)
+      // 2. Validate dangerous connections
       const isA_Source = (pinA.functionalType === 'OUTPUT' || pinA.functionalType === 'POWER');
       const isB_Source = (pinB.functionalType === 'OUTPUT' || pinB.functionalType === 'POWER');
       const isA_Gnd = pinA.functionalType === 'GROUND';
       const isB_Gnd = pinB.functionalType === 'GROUND';
 
-      // Source to Ground = Short Circuit (e.g. Switch/VCC linked directly to GND)
+      // Source to Ground = Short Circuit
       if ((isA_Source && isB_Gnd) || (isB_Source && isA_Gnd)) {
-        playErrorSound();
+        playErrorSound("อันตราย! ห้ามต่อแหล่งจ่ายไฟหรือเอาต์พุตลงกราวด์โดยตรง เพราะจะทำให้ไฟลัดวงจร");
         setActivePin(null);
         return;
       }
 
-      // Source to Source = Contention (Block unless both are VCC)
-      // อนุญาตให้ VCC ต่อกับ VCC ได้ เพื่อให้แหล่งจ่ายไฟเข้าบอร์ด IC ได้
+      // Source to Source = Contention
       if (isA_Source && isB_Source) {
-        if (!(pinA.type === 'vcc' && pinB.type === 'vcc')) {
-          playErrorSound();
+        if (pinA.type === 'vcc' && pinB.type === 'vcc') {
+          // Allow VCC to VCC
+        } else {
+          playErrorSound(`ไม่สามารถต่อ ${pinA.label} เข้ากับ ${pinB.label} ได้ เพราะเอาต์พุตจะชนกัน (Logic Contention)`);
           setActivePin(null);
           return;
         }
       }
 
+      // Input to Input
+      if (pinA.functionalType === 'INPUT' && pinB.functionalType === 'INPUT') {
+        playErrorSound("ไม่ควรต่อพินอินพุตเข้าหากัน เพราะไม่มีสัญญาณไฟเลี้ยงวงจร");
+        setActivePin(null);
+        return;
+      }
+
       setWires([...wires, { from: activePin, to: pinId }]);
       setActivePin(null);
+      setErrorMessage(null);
     }
   };
 
@@ -198,19 +209,15 @@ export default function App() {
     const evaluateGateChannel = (gateId: string, channel: number): boolean => {
       const key = `${gateId}:${channel}`;
       if (channelResults[key] !== undefined) return channelResults[key];
-      
       const ent = entities.find(e => e.id === gateId);
       if (!ent || ent.type !== EntityType.GATE) return false;
-
       const hasPower = isConnectedToVcc(`${gateId}:vcc`) && isConnectedToGnd(`${gateId}:gnd`);
       icPowerStates[gateId] = hasPower;
       if (!hasPower) {
         channelResults[key] = false;
         return false;
       }
-
       const inputValues = [0, 1].map(i => getSignalState(`${gateId}:ch:${channel}:in:${i}`));
-
       let res = false;
       switch (ent.gateType) {
         case GateType.AND: res = inputValues[0] && inputValues[1]; break;
@@ -227,12 +234,10 @@ export default function App() {
 
     const getSignalState = (pinId: string, visited = new Set<string>()): boolean => {
       if (pinStates[pinId] !== undefined) return pinStates[pinId];
-
       const parts = pinId.split(':');
       const entId = parts[0];
       const pinType = parts[1];
       const ent = entities.find(e => e.id === entId);
-
       if (ent) {
         if (ent.type === EntityType.POWER && pinType === 'vcc') return true;
         if (ent.type === EntityType.POWER && pinType === 'gnd') return false;
@@ -245,10 +250,8 @@ export default function App() {
           return evaluateGateChannel(entId, chIdx);
         }
       }
-
       if (visited.has(pinId)) return false;
       visited.add(pinId);
-
       const connectedWires = wires.filter(w => w.to === pinId || w.from === pinId);
       for (const wire of connectedWires) {
         const otherSide = wire.to === pinId ? wire.from : wire.to;
@@ -257,7 +260,6 @@ export default function App() {
           return true;
         }
       }
-
       pinStates[pinId] = false;
       return false;
     };
@@ -273,7 +275,6 @@ export default function App() {
     });
 
     const wireStates = wires.map(w => getSignalState(w.from) || getSignalState(w.to));
-
     return { ledStates, wireStates, icPowerStates };
   }, [entities, wires]);
 
@@ -323,8 +324,16 @@ export default function App() {
 
   return (
     <div className={`h-screen w-screen flex flex-col bg-[#0d0f14] text-gray-300 font-mono select-none overflow-hidden transition-all duration-300 ${errorFlash ? 'brightness-125' : ''}`} onMouseMove={onMouseMove} onMouseUp={() => setDraggingId(null)}>
-      {/* Error Overlay */}
-      {errorFlash && <div className="fixed inset-0 bg-red-500/10 pointer-events-none z-[100] animate-pulse"></div>}
+      
+      {/* Dynamic Error Notification */}
+      {errorMessage && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-bounce pointer-events-none">
+          <div className="bg-red-600/90 text-white px-6 py-3 rounded-2xl shadow-2xl border-2 border-white/20 flex items-center gap-4 backdrop-blur-md">
+            <i className="fa-solid fa-triangle-exclamation text-xl"></i>
+            <span className="text-xs font-bold">{errorMessage}</span>
+          </div>
+        </div>
+      )}
 
       {/* Navbar */}
       <nav className="h-14 bg-[#141b26] border-b border-white/5 flex items-center justify-between px-6 z-50 shadow-2xl">
