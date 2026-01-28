@@ -8,21 +8,31 @@ interface SwitchInputProps {
 }
 
 const SwitchInput: React.FC<SwitchInputProps> = ({ index, isOn, onToggle }) => {
-  const label = String.fromCharCode(65 + index);
-
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-center gap-1 group">
       <div 
         onClick={(e) => { e.stopPropagation(); onToggle(); }}
-        className="w-10 h-14 bg-[#333] rounded-md p-1 cursor-pointer border-b-2 border-black shadow-inner flex flex-col items-center justify-center hover:bg-[#3a3a3a] transition-colors"
+        className="w-8 h-16 bg-[#1a1a1a] rounded-sm border border-[#333] shadow-inner flex flex-col items-center justify-between p-1 cursor-pointer hover:border-blue-500/50 transition-colors relative"
       >
-        <div className="w-6 h-8 bg-[#222] rounded flex flex-col items-center p-0.5 relative">
-           <div className={`w-4 h-4 rounded-sm bg-gray-400 border border-gray-300 shadow transition-all duration-150 ${
-             isOn ? '-translate-y-1 bg-blue-400' : 'translate-y-1'
-           }`}></div>
+        {/* Logic 1 Label */}
+        <span className="text-[6px] text-gray-600 font-bold select-none">1</span>
+        
+        {/* Switch Track */}
+        <div className="w-4 h-10 bg-black rounded-full relative flex items-center justify-center overflow-hidden border border-white/5 shadow-inner">
+           {/* Slider Handle */}
+           <div className={`absolute w-3.5 h-5 bg-white rounded-sm shadow-md transition-all duration-200 ease-in-out border-b-2 border-gray-400 ${
+             isOn ? '-translate-y-2' : 'translate-y-2'
+           }`}>
+             <div className="w-full h-[1px] bg-gray-200 mt-1"></div>
+             <div className="w-full h-[1px] bg-gray-200 mt-1"></div>
+             <div className="w-full h-[1px] bg-gray-200 mt-1"></div>
+           </div>
         </div>
+
+        {/* Logic 0 Label */}
+        <span className="text-[6px] text-gray-600 font-bold select-none">0</span>
       </div>
-      <span className="text-[7px] text-gray-500 font-black">{label}</span>
+      <span className="text-[8px] text-white/40 font-black group-hover:text-blue-400 transition-colors">SW{index}</span>
     </div>
   );
 };

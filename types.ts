@@ -13,13 +13,14 @@ export enum EntityType {
   GATE = 'GATE',
   POWER = 'POWER',
   SWITCH_PANEL = 'SWITCH_PANEL',
-  LED_PANEL = 'LED_PANEL'
+  LED_PANEL = 'LED_PANEL',
+  SEVEN_SEGMENT = 'SEVEN_SEGMENT'
 }
 
 export interface CircuitEntity {
   id: string;
   type: EntityType;
-  gateType?: GateType; // Only for GATE type
+  gateType?: GateType; 
   position: { x: number; y: number };
-  state?: any; // For switches (boolean array)
+  state?: any; 
 }
