@@ -311,7 +311,8 @@ export default function App() {
 
         {/* Workspace */}
         <main ref={workspaceRef} className="flex-1 relative wokwi-grid overflow-auto scrollbar-hide cursor-crosshair">
-          <svg className="absolute inset-0 w-full h-full pointer-events-none z-10 min-w-[2000px] min-h-[2000px]">
+          {/* Wire layer brought to front with z-30 */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none z-30 min-w-[2000px] min-h-[2000px]">
             {wires.map((wire, idx) => {
               const start = pinPositions[wire.from];
               const end = pinPositions[wire.to];
@@ -336,7 +337,7 @@ export default function App() {
               );
             })}
             {activePin && pinPositions[activePin] && (
-              <line x1={pinPositions[activePin].x} y1={pinPositions[activePin].y} x2={mousePos.x} y2={mousePos.y} stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeDasharray="6,4" />
+              <line x1={pinPositions[activePin].x} y1={pinPositions[activePin].y} x2={mousePos.x} y2={mousePos.y} stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeDasharray="6,4" />
             )}
           </svg>
 
