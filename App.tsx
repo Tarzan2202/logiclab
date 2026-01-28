@@ -26,9 +26,9 @@ export default function App() {
   useEffect(() => {
     if (entities.length === 0) {
       setEntities([
-        { id: 'pwr-0', type: EntityType.POWER, position: { x: 50, y: 50 } },
-        { id: 'sw-0', type: EntityType.SWITCH_PANEL, position: { x: 50, y: 200 }, state: [false, false, false, false, false] },
-        { id: 'led-0', type: EntityType.LED_PANEL, position: { x: 850, y: 200 } }
+        { id: 'pwr-0', type: EntityType.POWER, position: { x: 100, y: 100 } },
+        { id: 'sw-0', type: EntityType.SWITCH_PANEL, position: { x: 100, y: 300 }, state: [false, false, false, false, false] },
+        { id: 'led-0', type: EntityType.LED_PANEL, position: { x: 900, y: 300 } }
       ]);
     }
   }, []);
@@ -240,7 +240,7 @@ export default function App() {
           </div>
           <div className="flex flex-col">
             <span className="text-xs font-black tracking-widest text-white uppercase">LogicLab Realistic</span>
-            <span className="text-[9px] text-blue-400/60 uppercase font-bold">Simulator v4.5 Pro Edition</span>
+            <span className="text-[9px] text-blue-400/60 uppercase font-bold">Simulator v4.5 Pro Edition (Offline)</span>
           </div>
         </div>
         <div className="flex gap-4">
@@ -255,7 +255,7 @@ export default function App() {
         <aside className="w-64 bg-[#141b26] border-r border-white/5 p-5 flex flex-col gap-8 overflow-y-auto z-40 shadow-2xl">
           <div>
             <h3 className="text-[10px] text-blue-400/70 uppercase mb-4 font-black tracking-widest flex items-center gap-2">
-              <i className="fa-solid fa-plus-circle"></i> อุปกรณ์ลอจิก
+              <i className="fa-solid fa-plus-circle"></i> อุปกรณ์ลอจิก (IC)
             </h3>
             <div className="grid grid-cols-1 gap-2">
               {Object.values(GateType).map(gt => (
@@ -311,7 +311,7 @@ export default function App() {
 
         {/* Workspace */}
         <main ref={workspaceRef} className="flex-1 relative wokwi-grid overflow-auto scrollbar-hide cursor-crosshair">
-          {/* Wire layer brought to front with z-30 */}
+          {/* Layer: Wires (Frontmost z-30) */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-30 min-w-[2000px] min-h-[2000px]">
             {wires.map((wire, idx) => {
               const start = pinPositions[wire.from];
@@ -341,6 +341,7 @@ export default function App() {
             )}
           </svg>
 
+          {/* Layer: Components (Mid-ground z-20) */}
           <div className="relative w-full h-full min-h-[2000px] min-w-[2000px] p-20">
             {entities.map(ent => (
               <div key={ent.id} className="absolute ic-body rounded-xl border border-white/5 shadow-2xl z-20 overflow-hidden min-w-[120px]" style={{ left: ent.position.x, top: ent.position.y }}>
