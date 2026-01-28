@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import { GateType, EntityType, CircuitEntity } from './types';
 import SwitchInput from './components/SwitchInput';
 import Bulb from './components/Bulb';
