@@ -344,8 +344,8 @@ export default function App() {
             <i className="fa-solid fa-microchip text-blue-400 text-xl"></i>
           </div>
           <div className="flex flex-col">
-            <span className="text-xs font-black tracking-widest text-white uppercase">LogicLab Realistic</span>
-            <span className="text-[9px] text-blue-400/60 uppercase font-bold">Simulator v4.5 Pro Edition (Offline)</span>
+            <span className="text-xs font-black tracking-widest text-white uppercase">LogicLab </span>
+            <span className="text-[9px] text-blue-400/60 uppercase font-bold"> </span>
           </div>
         </div>
         <div className="flex gap-4">
