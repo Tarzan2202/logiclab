@@ -19,9 +19,37 @@ export default function App() {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [errorFlash, setErrorFlash] = useState(false);
   const workspaceRef = useRef<HTMLDivElement>(null);
 
   const CHANNELS_PER_IC = 4;
+
+  // Web Audio API for Error Sound
+  const playErrorSound = useCallback(() => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.type = 'sawtooth';
+      oscillator.frequency.setValueAtTime(120, audioCtx.currentTime); // Low frequency buzz
+      oscillator.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.3);
+
+      gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.3);
+      
+      setErrorFlash(true);
+      setTimeout(() => setErrorFlash(false), 300);
+    } catch (e) {
+      console.error("Audio error", e);
+    }
+  }, []);
 
   useEffect(() => {
     if (entities.length === 0) {
@@ -59,6 +87,80 @@ export default function App() {
   useEffect(() => {
     updatePinPositions();
   }, [entities, wires, updatePinPositions]);
+
+  // Helper to identify pin type
+  const getPinInfo = (pinId: string) => {
+    const parts = pinId.split(':');
+    const type = parts[1]; // vcc, gnd, sw, ch, in
+    let functionalType: 'POWER' | 'GROUND' | 'INPUT' | 'OUTPUT' = 'INPUT';
+    
+    if (type === 'vcc') functionalType = 'POWER';
+    else if (type === 'gnd') functionalType = 'GROUND';
+    else if (type === 'sw') functionalType = 'OUTPUT';
+    else if (type === 'ch' && parts[3] === 'out') functionalType = 'OUTPUT';
+    else if (type === 'ch' && parts[3] === 'in') functionalType = 'INPUT';
+    else if (type === 'in') functionalType = 'INPUT';
+
+    return { type, functionalType };
+  };
+
+  const onPinClick = (pinId: string) => {
+    if (!activePin) {
+      setActivePin(pinId);
+    } else {
+      if (activePin === pinId) {
+        setActivePin(null);
+        return;
+      }
+
+      const pinA = getPinInfo(activePin);
+      const pinB = getPinInfo(pinId);
+
+      // 1. Check GND wire limit (Only 1 wire per GND pin)
+      if (pinB.functionalType === 'GROUND') {
+        const existingWire = wires.find(w => w.from === pinId || w.to === pinId);
+        if (existingWire) {
+          playErrorSound();
+          setActivePin(null);
+          return;
+        }
+      }
+      if (pinA.functionalType === 'GROUND') {
+        const existingWire = wires.find(w => w.from === activePin || w.to === activePin);
+        if (existingWire) {
+          playErrorSound();
+          setActivePin(null);
+          return;
+        }
+      }
+
+      // 2. Validate "Dangerous" connections (Short circuits)
+      const isA_Source = (pinA.functionalType === 'OUTPUT' || pinA.functionalType === 'POWER');
+      const isB_Source = (pinB.functionalType === 'OUTPUT' || pinB.functionalType === 'POWER');
+      const isA_Gnd = pinA.functionalType === 'GROUND';
+      const isB_Gnd = pinB.functionalType === 'GROUND';
+
+      // Source to Ground = Short Circuit (e.g. Switch/VCC linked directly to GND)
+      if ((isA_Source && isB_Gnd) || (isB_Source && isA_Gnd)) {
+        playErrorSound();
+        setActivePin(null);
+        return;
+      }
+
+      // Source to Source = Contention (Block unless both are VCC)
+      // อนุญาตให้ VCC ต่อกับ VCC ได้ เพื่อให้แหล่งจ่ายไฟเข้าบอร์ด IC ได้
+      if (isA_Source && isB_Source) {
+        if (!(pinA.type === 'vcc' && pinB.type === 'vcc')) {
+          playErrorSound();
+          setActivePin(null);
+          return;
+        }
+      }
+
+      setWires([...wires, { from: activePin, to: pinId }]);
+      setActivePin(null);
+    }
+  };
 
   const circuitState = useMemo(() => {
     const pinStates: Record<string, boolean> = {};
@@ -175,17 +277,6 @@ export default function App() {
     return { ledStates, wireStates, icPowerStates };
   }, [entities, wires]);
 
-  const onPinClick = (pinId: string) => {
-    if (!activePin) {
-      setActivePin(pinId);
-    } else {
-      if (activePin !== pinId) {
-        setWires([...wires, { from: activePin, to: pinId }]);
-      }
-      setActivePin(null);
-    }
-  };
-
   const addEntity = (type: EntityType, gateType?: GateType) => {
     const id = Math.random().toString(36).substr(2, 6);
     setEntities([...entities, {
@@ -231,7 +322,10 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#0d0f14] text-gray-300 font-mono select-none overflow-hidden" onMouseMove={onMouseMove} onMouseUp={() => setDraggingId(null)}>
+    <div className={`h-screen w-screen flex flex-col bg-[#0d0f14] text-gray-300 font-mono select-none overflow-hidden transition-all duration-300 ${errorFlash ? 'brightness-125' : ''}`} onMouseMove={onMouseMove} onMouseUp={() => setDraggingId(null)}>
+      {/* Error Overlay */}
+      {errorFlash && <div className="fixed inset-0 bg-red-500/10 pointer-events-none z-[100] animate-pulse"></div>}
+
       {/* Navbar */}
       <nav className="h-14 bg-[#141b26] border-b border-white/5 flex items-center justify-between px-6 z-50 shadow-2xl">
         <div className="flex items-center gap-4">
