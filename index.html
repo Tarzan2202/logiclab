@@ -4,70 +4,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LogicLab - Pro Workbench</title>
+    <title>LogicLab NX100+ Simulator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Kanit:wght@300;500&display=swap');
         
         body {
-            background-color: #0d0f14;
+            background-color: #0b0c10;
             color: #e0e0e0;
             font-family: 'JetBrains+Mono', monospace;
             overflow: hidden;
+            margin: 0;
+            padding: 0;
         }
         
-        .wokwi-grid {
-            background-color: #0d0f14;
-            background-image: 
-                radial-gradient(circle at 2px 2px, #1e293b 1px, transparent 0);
-            background-size: 24px 24px;
+        .board-container {
+            background: #1e2a38;
+            border: 8px solid #141b24;
+            border-radius: 12px;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.6), 0 10px 40px rgba(0,0,0,0.8);
             position: relative;
+            transform-origin: center center;
+            flex-shrink: 0;
         }
 
-        .wokwi-grid::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(13, 15, 20, 0.8) 100%);
-            pointer-events: none;
+        .breadboard {
+            background: #cbd5e0;
+            background-image: radial-gradient(#a0aec0 2px, transparent 2px);
+            background-size: 18px 18px;
+            border-radius: 4px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
         }
 
-        .ic-body {
-            background: linear-gradient(145deg, #1e1e1e, #121212);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+        .nx-panel {
+            background: #243447;
             border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px;
         }
 
-        .glass-panel {
-            background: rgba(20, 20, 25, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+        .ic-realistic {
+            background: #111;
+            border-radius: 2px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.7);
         }
-        
-        @keyframes flow {
-            to { stroke-dashoffset: -20; }
+
+        .ic-pin {
+            background: #bdc3c7;
+            border: 1px solid #95a5a6;
+            transition: all 0.1s;
+            cursor: pointer;
+        }
+
+        .ic-pin:hover {
+            background: #3498db;
+            transform: scale(1.1);
+            z-index: 60;
         }
 
         .wire-active {
-            stroke-dasharray: 10, 5;
-            animation: flow 1s linear infinite;
+            stroke-dasharray: 8, 4;
+            animation: flow 0.8s linear infinite;
         }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+        @keyframes flow {
+            to { stroke-dashoffset: -12; }
         }
-        ::-webkit-scrollbar-track {
-            background: #0d0f14;
+
+        .error-shake {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+            40%, 60% { transform: translate3d(3px, 0, 0); }
+        }
+
+        /* สำหรับ Scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
         }
         ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
+            background: #34495e;
+            border-radius: 10px;
         }
     </style>
 <script type="importmap">
@@ -80,11 +102,9 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
-<body class="wokwi-grid">
-    <div id="">Error 404</div>
-    <!-- <div id="root"></div>
-<script type="module" src="/index.tsx"></script> -->
+<body>
+    <p styel"text alight-center">Error 404</p>
+    <div id="root"></div>
 </body>
 </html>
