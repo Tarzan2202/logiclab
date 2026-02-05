@@ -30,10 +30,10 @@ export default function App() {
   // Auto-Scaling Logic
   useEffect(() => {
     const handleResize = () => {
-      const padding = 60;
-      const toolbarHeight = 100;
-      const availableWidth = window.innerWidth - padding;
-      const availableHeight = window.innerHeight - toolbarHeight - padding;
+      const sidebarWidth = 260;
+      const padding = 40;
+      const availableWidth = window.innerWidth - sidebarWidth - padding;
+      const availableHeight = window.innerHeight - padding;
       const scaleX = availableWidth / BOARD_WIDTH;
       const scaleY = availableHeight / BOARD_HEIGHT;
       setScale(Math.min(scaleX, scaleY, 1));
@@ -84,7 +84,6 @@ export default function App() {
         const id = pin.getAttribute('data-pin-id');
         if (id) {
           const rect = pin.getBoundingClientRect();
-          // Calculate relative position based on board's current scale
           positions[id] = {
             x: (rect.left + rect.width / 2 - boardRect.left) / scale,
             y: (rect.top + rect.height / 2 - boardRect.top) / scale
@@ -236,29 +235,72 @@ export default function App() {
   };
 
   return (
-    <div className={`h-screen w-screen bg-[#0d0f14] flex flex-col items-center p-4 transition-all overflow-hidden`}>
+    <div className={`h-screen w-screen bg-[#0d0f14] flex flex-row transition-all overflow-hidden`}>
       
       {errorMessage && (
-        <div className="fixed top-2 z-[100] bg-red-600 text-white px-6 py-2 rounded-lg font-bold shadow-2xl animate-bounce text-xs uppercase">
+        <div className="fixed top-2 left-1/2 -translate-x-1/2 z-[100] bg-red-600 text-white px-6 py-2 rounded-lg font-bold shadow-2xl animate-bounce text-xs uppercase">
           {errorMessage}
         </div>
       )}
 
-      {/* Toolbox - Always at top */}
-      <div className="flex flex-wrap gap-2 mb-4 bg-[#1a252f] p-3 rounded-xl border border-white/5 shadow-2xl items-center z-50">
-        <span className="text-[10px] text-blue-400 font-black uppercase px-2 border-r border-white/10">IC LIBRARY</span>
-        {Object.values(GateType).map(gt => (
-          <button key={gt} onClick={() => addIC(gt)} className="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white text-[9px] px-3 py-1.5 rounded-lg font-bold border border-blue-600/20 transition-all">
-            {GATE_DATASHEET[gt].model}
-          </button>
-        ))}
-        <button onClick={() => setWires([])} className="bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white text-[9px] px-3 py-1.5 rounded-lg font-bold border border-red-600/20 transition-all">
-          RESET ALL WIRES
-        </button>
-      </div>
+      {/* Sidebar - IC Library */}
+      <aside className="w-64 bg-[#141b24] border-r border-white/5 flex flex-col z-50 shadow-2xl">
+        <div className="p-6 border-b border-white/5">
+            <h1 className="text-blue-400 font-black text-lg tracking-tighter">NX100+<br/><span className="text-white opacity-40 text-xs font-normal tracking-normal">Logic Simulator</span></h1>
+        </div>
+        
+        <nav className="flex-1 overflow-y-auto p-4 space-y-6">
+            <section>
+                <div className="flex items-center gap-2 mb-3 px-2">
+                    <i className="fas fa-microchip text-blue-500 text-[10px]"></i>
+                    <span className="text-[10px] text-white/40 font-black uppercase tracking-widest">IC Library</span>
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                    {Object.values(GateType).map(gt => (
+                        <button 
+                            key={gt} 
+                            onClick={() => addIC(gt)} 
+                            className="flex flex-col items-start p-3 rounded-xl bg-white/5 hover:bg-blue-600 border border-white/5 hover:border-blue-400 transition-all group"
+                        >
+                            <span className="text-xs font-black text-white group-hover:text-white">{GATE_DATASHEET[gt].model}</span>
+                            <span className="text-[8px] text-white/40 group-hover:text-blue-100 uppercase tracking-tighter">{GATE_DATASHEET[gt].title.split(' ').slice(1).join(' ')}</span>
+                        </button>
+                    ))}
+                </div>
+            </section>
 
-      {/* Scalable Workspace Wrapper */}
-      <div className="flex-1 w-full flex items-center justify-center overflow-hidden">
+            <section>
+                 <div className="flex items-center gap-2 mb-3 px-2">
+                    <i className="fas fa-tools text-red-500 text-[10px]"></i>
+                    <span className="text-[10px] text-white/40 font-black uppercase tracking-widest">Tools</span>
+                </div>
+                <button 
+                    onClick={() => setWires([])} 
+                    className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-red-600/10 hover:bg-red-600 border border-red-600/20 text-red-500 hover:text-white transition-all font-black text-[10px] uppercase"
+                >
+                    <i className="fas fa-broom"></i>
+                    Reset Wires
+                </button>
+            </section>
+        </nav>
+
+        <div className="p-4 border-t border-white/5">
+            <div className="text-[8px] text-white/20 uppercase font-black tracking-widest leading-relaxed">
+                v1.2.0 Stable<br/>
+                No API Mode Active
+            </div>
+        </div>
+      </aside>
+
+      {/* Main Workspace Area */}
+      <main className="flex-1 flex flex-col items-center justify-center relative overflow-hidden bg-[#0b0c10]">
+        
+        {/* Workspace Labels */}
+        <div className="absolute top-8 left-8 flex items-center gap-4 opacity-30 pointer-events-none">
+            <div className="w-12 h-[1px] bg-white"></div>
+            <span className="text-[10px] font-black uppercase tracking-widest">Breadboard Workspace</span>
+        </div>
+
         <div 
           ref={workspaceRef} 
           onMouseMove={handleMouseMove}
@@ -368,11 +410,7 @@ export default function App() {
             )}
           </svg>
         </div>
-      </div>
-
-      <div className="mt-2 text-white/20 text-[8px] uppercase font-black tracking-widest text-center">
-        NX100+ Logic Trainer Simulation • Drag ICs to Breadboard Zone • Interactive Wiring System
-      </div>
+      </main>
     </div>
   );
 }
