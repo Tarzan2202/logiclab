@@ -246,7 +246,7 @@ export default function App() {
       {/* Sidebar - IC Library */}
       <aside className="w-64 bg-[#141b24] border-r border-white/5 flex flex-col z-50 shadow-2xl">
         <div className="p-6 border-b border-white/5">
-            <h1 className="text-blue-400 font-black text-lg tracking-tighter">NX100+<br/><span className="text-white opacity-40 text-xs font-normal tracking-normal">Logic Simulator</span></h1>
+            <h1 className="text-blue-400 font-black text-lg tracking-tighter"><br/><span className="text-white opacity-40 text-xs font-normal tracking-normal">Logic Simulator</span></h1>
         </div>
         
         <nav className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -298,7 +298,7 @@ export default function App() {
         {/* Workspace Labels */}
         <div className="absolute top-8 left-8 flex items-center gap-4 opacity-30 pointer-events-none">
             <div className="w-12 h-[1px] bg-white"></div>
-            <span className="text-[10px] font-black uppercase tracking-widest">Breadboard Workspace</span>
+            <span className="text-[10px] font-black uppercase tracking-widest"></span>
         </div>
 
         <div 
@@ -309,7 +309,7 @@ export default function App() {
           style={{ width: `${BOARD_WIDTH}px`, height: `${BOARD_HEIGHT}px`, transform: `scale(${scale})` }}
         >
           {/* Silk Labels */}
-          <div className="absolute top-4 left-4 text-[10px] text-white/5 font-black tracking-widest uppercase">NX100+ MICROCONTROLLER EXPERIMENT BOARD</div>
+          <div className="absolute top-4 left-4 text-[10px] text-white/5 font-black tracking-widest uppercase"> MICROCONTROLLER EXPERIMENT BOARD</div>
 
           {/* Breadboard Placeholder */}
           <div className="breadboard absolute top-[150px] left-[150px] w-[550px] h-[360px] opacity-30"></div>
