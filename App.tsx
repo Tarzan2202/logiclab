@@ -20,15 +20,42 @@ export default function App() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [flash, setFlash] = useState(false);
   const [scale, setScale] = useState(1);
   const [infoGate, setInfoGate] = useState<GateType | null>(null);
   
   const workspaceRef = useRef<HTMLDivElement>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
   const BOARD_WIDTH = 1100;
   const BOARD_HEIGHT = 850; 
 
-  // Auto-Scaling Logic
+  // Function to play error sound
+  const playErrorSound = () => {
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      const ctx = audioCtxRef.current;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(150, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.3);
+
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    } catch (e) {
+      console.warn("Audio not supported or blocked", e);
+    }
+  };
+
+  // Auto-Scaling Logic (For responsiveness only)
   useEffect(() => {
     const handleResize = () => {
       const sidebarWidth = 260;
@@ -58,8 +85,11 @@ export default function App() {
 
   const playError = useCallback((msg: string) => {
     setErrorMessage(msg);
-    setFlash(true);
-    setTimeout(() => { setErrorMessage(null); setFlash(false); }, 3000);
+    playErrorSound();
+    // ข้อความจะหายไปเองหลังจาก 5 วินาที
+    setTimeout(() => { 
+      setErrorMessage(null); 
+    }, 5000);
   }, []);
 
   const updatePositions = useCallback(() => {
@@ -87,6 +117,15 @@ export default function App() {
     return () => clearInterval(timer);
   }, [updatePositions]);
 
+  const getPinName = (pinId: string) => {
+    const [entId, type, sub] = pinId.split(':');
+    if (entId === 'pwr-main') return type.toUpperCase();
+    if (type === 'sw') return `Switch ${sub}`;
+    if (type === 'in') return `LED Input ${sub}`;
+    if (type === 'p') return `IC Pin ${sub}`;
+    return pinId;
+  };
+
   const getPinInfo = (pinId: string) => {
     const [entId, type, sub] = pinId.split(':');
     const ent = entities.find(e => e.id === entId);
@@ -113,7 +152,7 @@ export default function App() {
       const pinA = getPinInfo(activePin);
       const pinB = getPinInfo(pinId);
       if ((pinA.isSource && pinB.isGnd) || (pinB.isSource && pinA.isGnd)) {
-        playError("Short Circuit Detected!");
+        playError(`Short Circuit! ไม่สามารถต่อ ${getPinName(activePin)} เข้ากับ ${getPinName(pinId)} (VCC ชน GND)`);
         setActivePin(null);
         return;
       }
@@ -263,6 +302,22 @@ export default function App() {
         </nav>
       </aside>
 
+      {/* Error Alert Overlay - Stable Fade In, No Bouncing or Zooming Effects */}
+      {errorMessage && (
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[200] px-8 py-5 bg-red-600 text-white rounded-2xl shadow-[0_10px_40px_rgba(220,38,38,0.5)] flex items-center gap-5 border-2 border-red-400 transition-all duration-300 ease-out animate-in fade-in slide-in-from-top-4">
+          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl">
+            <i className="fas fa-bolt"></i>
+          </div>
+          <div>
+            <div className="font-black text-xs uppercase tracking-[0.2em] opacity-80 mb-0.5">Wiring Error Detected</div>
+            <div className="font-bold text-lg leading-tight">{errorMessage}</div>
+          </div>
+          <button onClick={() => setErrorMessage(null)} className="ml-4 w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center">
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+      )}
+
       {/* Educational Modal */}
       {infoGate && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm" onClick={() => setInfoGate(null)}>
@@ -316,7 +371,7 @@ export default function App() {
           ref={workspaceRef} 
           onMouseMove={handleMouseMove}
           onMouseUp={() => setDraggingId(null)}
-          className={`pcb-board ${flash ? 'error-shake' : ''}`}
+          className="pcb-board"
           style={{ width: `${BOARD_WIDTH}px`, height: `${BOARD_HEIGHT}px`, transform: `scale(${scale})` }}
         >
           {/* Decorative dummy sections */}
@@ -342,11 +397,11 @@ export default function App() {
               {ent.type === EntityType.POWER && (
                 <div className="nx-panel p-4 flex flex-col gap-10 border-l-8 border-red-500 bg-black/40 shadow-2xl">
                    <div className="flex flex-col items-center gap-2">
-                       <div data-pin-id={`${ent.id}:vcc`} onClick={() => handlePinClick(`${ent.id}:vcc`)} className="w-12 h-12 rounded-full bg-red-600 border-4 border-black/70 cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-xl flex items-center justify-center text-sm font-black text-white">+</div>
+                       <div data-pin-id={`${ent.id}:vcc`} onClick={() => handlePinClick(`${ent.id}:vcc`)} className={`w-12 h-12 rounded-full bg-red-600 border-4 border-black/70 cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-xl flex items-center justify-center text-sm font-black text-white ${activePin === `${ent.id}:vcc` ? 'ring-4 ring-white animate-pulse' : ''}`}>+</div>
                        <span className="silk-label text-[10px] text-red-500 font-black">5V VCC</span>
                    </div>
                    <div className="flex flex-col items-center gap-2">
-                       <div data-pin-id={`${ent.id}:gnd`} onClick={() => handlePinClick(`${ent.id}:gnd`)} className="w-12 h-12 rounded-full bg-[#111] border-4 border-white/10 cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-xl flex items-center justify-center text-sm font-black text-white/50">-</div>
+                       <div data-pin-id={`${ent.id}:gnd`} onClick={() => handlePinClick(`${ent.id}:gnd`)} className={`w-12 h-12 rounded-full bg-[#111] border-4 border-white/10 cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-xl flex items-center justify-center text-sm font-black text-white/50 ${activePin === `${ent.id}:gnd` ? 'ring-4 ring-white animate-pulse' : ''}`}>-</div>
                        <span className="silk-label text-[10px] text-gray-500 font-black">GND</span>
                    </div>
                 </div>
@@ -357,7 +412,7 @@ export default function App() {
                 <div className="nx-panel p-6 flex gap-4 border-b-8 border-blue-600 bg-black/30">
                   {ent.state?.map((s: boolean, i: number) => (
                     <div key={i} className="flex flex-col items-center gap-1">
-                      <div data-pin-id={`${ent.id}:sw:${i}`} onClick={() => handlePinClick(`${ent.id}:sw:${i}`)} className="w-8 h-6 bg-black rounded-sm mb-[-15px] cursor-pointer hover:bg-blue-500 z-30 border border-white/10 shadow-inner transition-colors"></div>
+                      <div data-pin-id={`${ent.id}:sw:${i}`} onClick={() => handlePinClick(`${ent.id}:sw:${i}`)} className={`w-8 h-6 bg-black rounded-sm mb-[-15px] cursor-pointer hover:bg-blue-500 z-30 border border-white/10 shadow-inner transition-colors ${activePin === `${ent.id}:sw:${i}` ? 'bg-blue-500 ring-2 ring-white animate-pulse' : ''}`}></div>
                       <SwitchInput index={i} isOn={s} onToggle={() => {
                         setEntities(entities.map(x => x.id === ent.id ? {...x, state: x.state.map((v:any, idx:number) => idx === i ? !v : v)} : x));
                       }} />
@@ -371,7 +426,7 @@ export default function App() {
                 <div className="nx-panel p-6 flex gap-4 border-t-8 border-green-600 bg-black/30">
                   {Array(8).fill(0).map((_, i) => (
                     <div key={i} className="flex flex-col items-center gap-1">
-                      <div data-pin-id={`${ent.id}:in:${i}`} onClick={() => handlePinClick(`${ent.id}:in:${i}`)} className="w-8 h-6 bg-black rounded-sm mt-[-15px] order-last cursor-pointer hover:bg-green-500 z-30 border border-white/10 shadow-inner transition-colors"></div>
+                      <div data-pin-id={`${ent.id}:in:${i}`} onClick={() => handlePinClick(`${ent.id}:in:${i}`)} className={`w-8 h-6 bg-black rounded-sm mt-[-15px] order-last cursor-pointer hover:bg-green-500 z-30 border border-white/10 shadow-inner transition-colors ${activePin === `${ent.id}:in:${i}` ? 'bg-green-500 ring-2 ring-white animate-pulse' : ''}`}></div>
                       <Bulb isOn={circuitStatus.componentStates[ent.id]?.[i]} />
                     </div>
                   ))}
@@ -384,7 +439,7 @@ export default function App() {
                   <SevenSegment segments={circuitStatus.componentStates[ent.id] || {}} />
                   <div className="grid grid-cols-4 gap-2">
                     {['a','b','c','d','e','f','g','dp'].map(seg => (
-                      <div key={seg} data-pin-id={`${ent.id}:${seg}`} onClick={() => handlePinClick(`${ent.id}:${seg}`)} className="w-5 h-5 bg-black rounded-sm text-[8px] text-white/40 flex items-center justify-center font-black cursor-pointer hover:bg-red-600 border border-white/10">{seg.toUpperCase()}</div>
+                      <div key={seg} data-pin-id={`${ent.id}:${seg}`} onClick={() => handlePinClick(`${ent.id}:${seg}`)} className={`w-5 h-5 bg-black rounded-sm text-[8px] text-white/40 flex items-center justify-center font-black cursor-pointer hover:bg-red-600 border border-white/10 ${activePin === `${ent.id}:${seg}` ? 'bg-red-600 ring-2 ring-white animate-pulse' : ''}`}>{seg.toUpperCase()}</div>
                     ))}
                   </div>
                 </div>
@@ -394,10 +449,10 @@ export default function App() {
               {ent.type === EntityType.GATE && (
                 <div className="ic-realistic w-[90px] h-[210px] flex flex-col items-center justify-between p-3 relative select-none" onMouseDown={(e) => startDrag(e, ent.id)}>
                   <div className="absolute left-[-15px] top-6 bottom-6 flex flex-col justify-between">
-                    {[1,2,3,4,5,6,7].map(p => (<div key={p} data-pin-id={`${ent.id}:p:${p}`} onClick={(e) => { e.stopPropagation(); handlePinClick(`${ent.id}:p:${p}`); }} className="w-5 h-5 ic-pin rounded-l-md flex items-center justify-center text-[9px] text-black font-black">{p}</div>))}
+                    {[1,2,3,4,5,6,7].map(p => (<div key={p} data-pin-id={`${ent.id}:p:${p}`} onClick={(e) => { e.stopPropagation(); handlePinClick(`${ent.id}:p:${p}`); }} className={`w-5 h-5 ic-pin rounded-l-md flex items-center justify-center text-[9px] text-black font-black ${activePin === `${ent.id}:p:${p}` ? 'bg-blue-500 ring-2 ring-white animate-pulse' : ''}`}>{p}</div>))}
                   </div>
                   <div className="absolute right-[-15px] top-6 bottom-6 flex flex-col justify-between">
-                    {[14,13,12,11,10,9,8].map(p => (<div key={p} data-pin-id={`${ent.id}:p:${p}`} onClick={(e) => { e.stopPropagation(); handlePinClick(`${ent.id}:p:${p}`); }} className="w-5 h-5 ic-pin rounded-r-md flex items-center justify-center text-[9px] text-black font-black">{p}</div>))}
+                    {[14,13,12,11,10,9,8].map(p => (<div key={p} data-pin-id={`${ent.id}:p:${p}`} onClick={(e) => { e.stopPropagation(); handlePinClick(`${ent.id}:p:${p}`); }} className={`w-5 h-5 ic-pin rounded-r-md flex items-center justify-center text-[9px] text-black font-black ${activePin === `${ent.id}:p:${p}` ? 'bg-blue-500 ring-2 ring-white animate-pulse' : ''}`}>{p}</div>))}
                   </div>
                   <div className="w-4 h-4 rounded-full bg-white/10 mt-1 border border-white/5"></div>
                   <div className="text-white font-black text-sm rotate-90 whitespace-nowrap opacity-90 uppercase tracking-[0.2em] pointer-events-none">{GATE_DATASHEET[ent.gateType!].model.replace('LS', '')}</div>
