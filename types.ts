@@ -6,7 +6,8 @@ export enum GateType {
   NAND = 'NAND',
   NOR = 'NOR',
   XOR = 'XOR',
-  BUFFER = 'BUFFER'
+  BUFFER = 'BUFFER',
+  DRIVER_4CH = 'DRIVER_4CH'
 }
 
 export enum EntityType {
@@ -14,7 +15,8 @@ export enum EntityType {
   POWER = 'POWER',
   SWITCH_PANEL = 'SWITCH_PANEL',
   LED_PANEL = 'LED_PANEL',
-  SEVEN_SEGMENT = 'SEVEN_SEGMENT'
+  SEVEN_SEGMENT = 'SEVEN_SEGMENT',
+  VOLTAGE_ADJUSTER = 'VOLTAGE_ADJUSTER'
 }
 
 export interface CircuitEntity {
