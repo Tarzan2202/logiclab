@@ -57,5 +57,12 @@ export const GATE_DATASHEET: Record<GateType, { title: string; description: stri
     description: "ส่งผ่านค่าเดิมโดยไม่เปลี่ยนลอจิก",
     truthTable: "IN | OUT\n0  | 0\n1  | 1",
     pins: { vcc: 14, gnd: 7, inputs: [[1], [3], [5], [9], [11], [13]], outputs: [2, 4, 6, 8, 10, 12] }
+  },
+  [GateType.DRIVER_4CH]: {
+    model: "ULN2003",
+    title: "4-Channel Sinking Driver",
+    description: "ULN2003 Darlington Array: ขยายกระแสและทำหน้าที่เป็นสวิตช์ดึงลงกราวด์ (Sinking) เมื่ออินพุตเป็น HIGH เอาต์พุตจะต่อลง GND",
+    truthTable: "IN | OUT\n0  | High-Z (1)\n1  | GND (0)",
+    pins: { vcc: 14, gnd: 7, inputs: [[1], [2], [3], [4]], outputs: [13, 12, 11, 10] }
   }
 };
