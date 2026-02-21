@@ -348,8 +348,8 @@ export default function App() {
       {/* Sidebar */}
       <aside className={`sidebar-transition h-full bg-[#0a0a0a] border-r border-white/5 flex flex-col z-[100] relative ${isSidebarOpen ? 'w-64' : 'w-0 opacity-0'}`}>
         <div className="p-6 border-b border-white/5">
-            <h1 className="text-emerald-500 font-black text-xl italic">NX-100+ PRO</h1>
-            <p className="text-[12px] text-white/20 uppercase tracking-widest font-black">Digital Trainer</p>
+            <h1 className="text-emerald-500 font-black text-xl italic"> </h1>
+            <p className="text-[12px] text-white/20 uppercase tracking-widest font-black"> </p>
         </div>
         <nav className="flex-1 overflow-y-auto p-4 space-y-2">
             <div className="text-[12px] font-black text-white/20 uppercase mb-4 px-2 tracking-widest">Logic Components</div>
