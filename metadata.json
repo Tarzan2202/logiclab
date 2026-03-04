@@ -1,5 +1,5 @@
 {
   "name": "LogicLab NX100+ Simulator",
-  "description": "A photo-realistic, high-resolution digital logic hardware training kit simulator. Features interactive breadboard, logic gates, switches, LEDs, and 7-segment displays with a physical hardware aesthetic.",
+  "description": "An interactive digital logic training simulator based on NX100+ board with 8 switches, 8 LEDs, and 7-segment displays. Built for offline educational use.",
   "requestFramePermissions": []
 }
