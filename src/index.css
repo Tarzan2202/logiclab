@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-pcb-green: #1a4d2e;
+  --color-pcb-green-dark: #123520;
+  --color-pcb-silk: #f0f0f0;
+  --color-pcb-trace: rgba(255, 255, 255, 0.05);
+}
+
+@layer base {
+  body {
+    @apply bg-zinc-950 text-zinc-100 antialiased;
+  }
+}
+
+.pcb-grid {
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.plastic-block {
+  @apply bg-zinc-900 border-t-zinc-600 border-l-zinc-600 border-b-black border-r-black;
+  box-shadow: 
+    inset 1px 1px 1px rgba(255,255,255,0.1),
+    inset -1px -1px 1px rgba(0,0,0,0.5),
+    4px 4px 8px rgba(0,0,0,0.6);
+}
+
+.hole-inner {
+  background: radial-gradient(circle at 40% 40%, #1a1a1a 0%, #050505 100%);
+  box-shadow: 
+    inset 2px 2px 3px rgba(0,0,0,0.9),
+    0.5px 0.5px 0px rgba(255,255,255,0.05);
+}
+
+.breadboard-hole {
+  @apply w-2.5 h-2.5 rounded-sm hole-inner;
+}
+
+.ic-chip {
+  background: linear-gradient(145deg, #333, #111);
+  box-shadow: 
+    3px 3px 6px rgba(0,0,0,0.7),
+    inset 1px 1px 1px rgba(255,255,255,0.1);
+}
+
+.screw-head {
+  background: radial-gradient(circle at 30% 30%, #444 0%, #222 100%);
+  box-shadow: 
+    inset 1px 1px 2px rgba(255,255,255,0.2),
+    1px 1px 2px rgba(0,0,0,0.5);
+}
