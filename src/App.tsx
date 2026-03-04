@@ -19,7 +19,7 @@ type LogicLevel = 0 | 1;
 
 const PinHeader = ({ count, vertical = false, label, cols = 1 }: { count: number; vertical?: boolean; label?: string; cols?: number }) => (
   <div className={cn("flex flex-col items-center gap-1.5", vertical ? "flex-row" : "flex-col")}>
-    {label && <span className="text-[10px] font-mono text-yellow-400 uppercase font-black drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] tracking-tighter">{label}</span>}
+    {label && <span className="text-[9px] font-mono text-pcb-silk/70 uppercase font-black drop-shadow-sm">{label}</span>}
     <div 
       className={cn(
         "plastic-block border-2 p-1.5 gap-1.5 grid",
@@ -28,9 +28,9 @@ const PinHeader = ({ count, vertical = false, label, cols = 1 }: { count: number
       style={{ gridTemplateColumns: cols > 1 ? `repeat(${cols}, minmax(0, 1fr))` : undefined }}
     >
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="w-4.5 h-4.5 hole-inner rounded-sm flex items-center justify-center relative shadow-inner">
-          <div className="absolute inset-0 bg-white/10 rounded-sm pointer-events-none" />
-          <div className="w-2.5 h-2.5 bg-zinc-700 rounded-full opacity-40 blur-[0.5px] border border-black/20" />
+        <div key={i} className="w-4 h-4 hole-inner rounded-sm flex items-center justify-center relative">
+          <div className="absolute inset-0 bg-white/5 rounded-sm pointer-events-none" />
+          <div className="w-2 h-2 bg-zinc-800 rounded-full opacity-30 blur-[0.5px]" />
         </div>
       ))}
     </div>
@@ -41,7 +41,7 @@ const ICChip = ({ label, pins = 14 }: { label: string; pins?: number }) => (
   <div className="flex flex-col items-center group">
     <div className="ic-chip w-12 rounded-sm border border-zinc-900 relative py-3 flex flex-col items-center justify-center transition-transform group-hover:scale-[1.02]" style={{ height: `${pins * 4.5}px` }}>
       <div className="absolute top-1.5 w-3 h-1.5 bg-zinc-950 rounded-full shadow-inner" />
-      <span className="text-[9px] font-mono text-zinc-200 font-black rotate-90 whitespace-nowrap tracking-tighter drop-shadow-md">{label}</span>
+      <span className="text-[8px] font-mono text-zinc-400 font-bold rotate-90 whitespace-nowrap opacity-60 tracking-tighter">{label}</span>
       {/* Pins */}
       <div className="absolute -left-2 top-0 bottom-0 flex flex-col justify-around py-2">
         {Array.from({ length: pins / 2 }).map((_, i) => (
@@ -173,7 +173,7 @@ const Led = ({ active, color = "red", label, ...props }: { active: boolean; colo
       <div className={cn("w-5 h-5 rounded-full border-2 transition-all duration-150 relative overflow-hidden", colors[color])}>
         <div className="absolute top-0.5 left-1 w-1.5 h-1.5 bg-white/30 rounded-full blur-[1px]" />
       </div>
-      {label && <span className="text-[10px] font-mono font-black text-yellow-400 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">{label}</span>}
+      {label && <span className="text-[9px] font-mono font-bold text-pcb-silk/70">{label}</span>}
     </div>
   );
 };
@@ -197,7 +197,7 @@ const SlideSwitch = ({ active, onToggle, label, ...props }: { active: boolean; o
         <span>0</span>
       </div>
     </div>
-    {label && <span className="text-[11px] font-mono font-black text-yellow-400 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">{label}</span>}
+    {label && <span className="text-[10px] font-mono font-bold text-pcb-silk/80">{label}</span>}
   </div>
 );
 
