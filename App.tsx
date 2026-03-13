@@ -294,7 +294,7 @@ export default function App() {
       
       {/* IC Info Modal */}
       {selectedGateInfo && (
-        <div className="fixed inset-0 z-[1100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
+        <div className="fixed inset-0 z-[1100] flex items-center justify-center p-6 bg-black">
           <div className="w-full max-w-lg bg-[#0f0f0f] border border-emerald-500/20 rounded-2xl shadow-[0_0_50px_rgba(16,185,129,0.1)] overflow-hidden animate-in fade-in zoom-in duration-300">
             <div className="p-6 border-b border-emerald-500/10 flex justify-between items-center bg-gradient-to-r from-emerald-500/5 to-transparent">
               <div>
@@ -313,7 +313,7 @@ export default function App() {
               <div className="grid grid-cols-2 gap-8">
                 <div>
                   <label className="text-[12px] font-black text-emerald-500/40 uppercase mb-2 block">Truth Table</label>
-                  <pre className="bg-black/50 p-4 rounded-lg border border-white/5 font-mono text-emerald-400 text-sm leading-relaxed">
+                  <pre className="p-4 rounded-lg border border-white/5 font-mono text-emerald-400 text-sm leading-relaxed">
                     {GATE_DATASHEET[selectedGateInfo].truthTable}
                   </pre>
                 </div>
@@ -381,7 +381,7 @@ export default function App() {
 
         {/* Floating Tooltip */}
         {hoveredPin && !isProbing && (
-          <div className="absolute z-[200] pointer-events-none bg-black/90 border border-white/20 p-2 rounded shadow-2xl backdrop-blur-md" 
+          <div className="absolute z-[200] pointer-events-none bg-black border border-white/40 p-2 rounded shadow-2xl" 
                style={{ left: mousePos.x * scale + (isSidebarOpen ? 256 : 0) + 20, top: mousePos.y * scale - 40 }}>
             <div className="flex items-center gap-2">
               <div className={`w-4 h-4 rounded-full ${getPinValue(hoveredPin) >= 0.1 ? 'bg-red-500 animate-pulse shadow-[0_0_10px_red]' : 'bg-blue-900'}`} style={{ opacity: Math.max(0.2, getPinValue(hoveredPin) / 5) }}></div>
@@ -417,22 +417,22 @@ export default function App() {
             <div className="absolute right-[40px] top-[280px] w-[200px]">
               <div className="nx-panel p-5 border-r-2 border-emerald-500/40 flex flex-col items-center">
                   <div className="silk-label mb-4 text-emerald-400 uppercase text-xs tracking-widest">Logic Probe</div>
-                 <div className="flex gap-6 mb-6">
+                 <div className="flex gap-6 mb-6 bg-black/60 p-3 rounded-lg border border-white/5">
                     <div className="flex flex-col items-center gap-1">
                        <div className={`w-6 h-6 rounded-full transition-all duration-75 ${circuitStatus.probeVal >= 2.5 ? 'bg-red-500 shadow-[0_0_20px_red]' : 'bg-red-950/20'}`}></div>
-                        <span className="text-[9px] font-black text-red-500/40">HI</span>
+                        <span className={`text-[9px] font-black ${circuitStatus.probeVal >= 2.5 ? 'text-red-500' : 'text-red-500/40'}`}>HI</span>
                     </div>
                     <div className="flex flex-col items-center gap-1">
                        <div className={`w-6 h-6 rounded-full transition-all duration-75 ${circuitStatus.probeVal >= 0 && circuitStatus.probeVal < 2.5 ? 'bg-green-500 shadow-[0_0_20px_#10b981]' : 'bg-green-950/20'}`}></div>
-                        <span className="text-[9px] font-black text-green-500/40">LO</span>
+                        <span className={`text-[9px] font-black ${circuitStatus.probeVal >= 0 && circuitStatus.probeVal < 2.5 ? 'text-green-500' : 'text-green-500/40'}`}>LO</span>
                     </div>
                  </div>
-                 <div 
+                  <div 
                     data-pin-id="probe:in" 
                     onClick={() => { setIsProbing(true); setProbeConnectedPin(null); }}
-                    className={`w-16 h-12 bg-black rounded border-2 border-emerald-500/60 cursor-pointer hover:bg-emerald-600 transition-all flex items-center justify-center group ${isProbing ? 'ring-2 ring-white scale-110' : ''}`}
-                 >
-                    <i className="fas fa-search text-white/20 group-hover:text-white transition-colors text-xl"></i>
+                    className={`w-16 h-12 rounded border-2 border-emerald-500/60 cursor-pointer hover:bg-emerald-600 transition-all flex items-center justify-center group ${isProbing ? 'ring-2 ring-white scale-110' : ''}`}
+                  >
+                    <i className="fas fa-search text-emerald-400 drop-shadow-[0_0_5px_#10b981] group-hover:text-white transition-colors text-xl"></i>
                  </div>
                   <div className="mt-4 text-[9px] text-white/20 italic tracking-widest uppercase">Probe Terminal</div>
               </div>
@@ -448,7 +448,7 @@ export default function App() {
                          <button onMouseDown={() => setPulseStates(p => ({...p, [`p${num}`]: true}))} onMouseUp={() => setPulseStates(p => ({...p, [`p${num}`]: false}))}
                             className="w-14 h-14 bg-blue-600 rounded-full border-4 border-black shadow-lg active:scale-95 active:shadow-inner transition-all flex items-center justify-center text-[9px] font-black text-white uppercase">Push</button>
                          <div data-pin-id={`pls:pls:${num}`} onMouseEnter={() => setHoveredPin(`pls:pls:${num}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`pls:pls:${num}`)} 
-                           className={`w-12 h-8 bg-black rounded border border-emerald-500/40 cursor-pointer hover:bg-emerald-900/40 transition-all flex items-center justify-center text-[8px] text-white/20 ${activePin === `pls:pls:${num}` ? 'ring-2 ring-white' : ''}`}>P{num}</div>
+                           className={`w-12 h-8 rounded border border-emerald-500/40 cursor-pointer hover:bg-emerald-900/40 transition-all flex items-center justify-center text-[10px] font-black text-emerald-400 drop-shadow-[0_0_3px_#10b981] relative z-10 ${activePin === `pls:pls:${num}` ? 'ring-2 ring-white' : ''}`}>P{num}</div>
                       </div>
                     ))}
                   </div>
@@ -463,7 +463,7 @@ export default function App() {
                       <div key={i} className="flex flex-col items-center justify-between gap-4">
                         <Bulb isOn={circuitStatus.ledStates[i] >= 0.1} brightness={circuitStatus.ledStates[i] / 5} />
                         <div data-pin-id={`led-unit:in:${i}`} onMouseEnter={() => setHoveredPin(`led-unit:in:${i}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`led-unit:in:${i}`)} 
-                          className={`w-12 h-8 bg-black rounded border border-red-500/40 cursor-pointer hover:bg-red-900/40 transition-all flex items-center justify-center text-[8px] text-white/20 ${activePin === `led-unit:in:${i}` ? 'ring-2 ring-white' : ''}`}>L{i}</div>
+                          className={`w-12 h-8 rounded border border-red-500/40 cursor-pointer hover:bg-red-900/40 transition-all flex items-center justify-center text-[10px] font-black text-red-500 drop-shadow-[0_0_3px_#ef4444] relative z-10 ${activePin === `led-unit:in:${i}` ? 'ring-2 ring-white' : ''}`}>L{i}</div>
                       </div>
                     ))}
                   </div>
@@ -482,7 +482,7 @@ export default function App() {
                        <div key={idx} className="grid grid-cols-4 gap-1">
                          {['a','b','c','d','e','f','g','dp'].map(s => (
                            <div key={s} data-pin-id={`seg:${idx}:${s}`} onMouseEnter={() => setHoveredPin(`seg:${idx}:${s}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`seg:${idx}:${s}`)} 
-                             className={`w-7 h-7 bg-black rounded border border-emerald-500/40 text-[8px] font-black flex items-center justify-center cursor-pointer hover:bg-emerald-900/40 transition-all ${activePin === `seg:${idx}:${s}` ? 'ring-1 ring-white' : ''}`}>{s.toUpperCase()}</div>
+                             className={`w-7 h-7 rounded border border-emerald-500/40 text-[10px] font-black text-emerald-400 drop-shadow-[0_0_3px_#10b981] flex items-center justify-center cursor-pointer hover:bg-emerald-900/40 transition-all relative z-10 ${activePin === `seg:${idx}:${s}` ? 'ring-1 ring-white' : ''}`}>{s.toUpperCase()}</div>
                          ))}
                        </div>
                      ))}
@@ -499,7 +499,7 @@ export default function App() {
                     </div>
                   </div>
                   <div data-pin-id="buz:in" onMouseEnter={() => setHoveredPin("buz:in")} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick("buz:in")} 
-                    className={`w-14 h-10 bg-black rounded border border-amber-500/40 mt-4 cursor-pointer hover:bg-amber-900/40 transition-all flex items-center justify-center text-[8px] text-white/20 ${activePin === 'buz:in' ? 'ring-2 ring-white' : ''}`}>IN</div>
+                    className={`w-14 h-10 rounded border border-amber-500/40 mt-4 cursor-pointer hover:bg-amber-900/40 transition-all flex items-center justify-center text-[10px] font-black text-amber-500 drop-shadow-[0_0_3px_#f59e0b] relative z-10 ${activePin === 'buz:in' ? 'ring-2 ring-white' : ''}`}>IN</div>
                </div>
             </div>
 
@@ -512,14 +512,14 @@ export default function App() {
                         <span className="text-[9px] text-white/30 text-center">INPUT</span>
                         {[0,1,2,3].map(i => (
                            <div key={i} data-pin-id={`drv4:in:${i}`} onMouseEnter={() => setHoveredPin(`drv4:in:${i}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`drv4:in:${i}`)} 
-                             className={`w-full h-8 bg-black rounded border border-purple-500/40 cursor-pointer hover:bg-purple-900/40 transition-all flex items-center justify-center text-[9px] text-white/40 ${activePin === `drv4:in:${i}` ? 'ring-2 ring-white' : ''}`}>IN{i+1}</div>
+                             className={`w-full h-8 rounded border border-purple-500/40 cursor-pointer hover:bg-purple-900/40 transition-all flex items-center justify-center text-[10px] font-black text-purple-400 drop-shadow-[0_0_3px_#a855f7] relative z-10 ${activePin === `drv4:in:${i}` ? 'ring-2 ring-white' : ''}`}>IN{i+1}</div>
                         ))}
                      </div>
                      <div className="flex flex-col gap-2">
                         <span className="text-[9px] text-white/30 text-center">OUTPUT</span>
                         {[0,1,2,3].map(i => (
                            <div key={i} data-pin-id={`drv4:out:${i}`} onMouseEnter={() => setHoveredPin(`drv4:out:${i}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`drv4:out:${i}`)} 
-                             className={`w-full h-8 bg-black rounded border border-purple-500/40 cursor-pointer hover:bg-purple-900/40 transition-all flex items-center justify-center text-[9px] text-white/40 ${activePin === `drv4:out:${i}` ? 'ring-2 ring-white' : ''}`}>OUT{i+1}</div>
+                             className={`w-full h-8 rounded border border-purple-500/40 cursor-pointer hover:bg-purple-900/40 transition-all flex items-center justify-center text-[10px] font-black text-purple-400 drop-shadow-[0_0_3px_#a855f7] relative z-10 ${activePin === `drv4:out:${i}` ? 'ring-2 ring-white' : ''}`}>OUT{i+1}</div>
                         ))}
                      </div>
                   </div>
@@ -548,7 +548,7 @@ export default function App() {
                          onMouseEnter={() => setHoveredPin("vadj:vadj:out")} 
                          onMouseLeave={() => setHoveredPin(null)} 
                          onClick={() => handlePinClick("vadj:vadj:out")} 
-                         className={`w-20 h-10 bg-black rounded border border-cyan-500/40 flex items-center justify-center font-black text-cyan-400 text-[10px] cursor-pointer hover:bg-cyan-900/40 transition-all ${activePin === 'vadj:vadj:out' ? 'ring-2 ring-white' : ''}`}
+                         className={`w-20 h-10 rounded border border-cyan-500/40 flex items-center justify-center font-black text-cyan-400 text-[11px] drop-shadow-[0_0_4px_#22d3ee] cursor-pointer hover:bg-cyan-900/40 transition-all relative z-10 ${activePin === 'vadj:vadj:out' ? 'ring-2 ring-white' : ''}`}
                        >
                          OUT
                        </div>
@@ -568,9 +568,9 @@ export default function App() {
                   <div className="silk-label text-red-500 text-center mb-4 uppercase text-xs tracking-widest">Power Supply</div>
                   <div className="flex justify-around items-center">
                      <div data-pin-id="pwr:vcc" onMouseEnter={() => setHoveredPin("pwr:vcc")} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick("pwr:vcc")} 
-                       className={`w-16 h-16 bg-red-600 rounded-full border-4 border-black cursor-pointer shadow-lg flex items-center justify-center font-black text-white text-sm hover:scale-105 transition-all ${activePin === 'pwr:vcc' ? 'ring-4 ring-white' : ''}`}>+5V</div>
+                       className={`w-16 h-16 rounded-full border-4 border-red-600/40 cursor-pointer shadow-[0_0_15px_rgba(239,68,68,0.3)] flex items-center justify-center font-black text-red-500 drop-shadow-[0_0_5px_#ef4444] text-sm hover:scale-105 transition-all ${activePin === 'pwr:vcc' ? 'ring-4 ring-white' : ''}`}>+5V</div>
                      <div data-pin-id="pwr:gnd" onMouseEnter={() => setHoveredPin("pwr:gnd")} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick("pwr:gnd")} 
-                       className={`w-16 h-16 bg-black rounded-full border-4 border-white/10 cursor-pointer shadow-lg flex items-center justify-center font-black text-white/40 text-sm hover:scale-105 transition-all ${activePin === 'pwr:gnd' ? 'ring-4 ring-white' : ''}`}>GND</div>
+                       className={`w-16 h-16 rounded-full border-4 border-white/10 cursor-pointer shadow-lg flex items-center justify-center font-black text-white/60 drop-shadow-[0_0_3px_rgba(255,255,255,0.5)] text-sm hover:scale-105 transition-all ${activePin === 'pwr:gnd' ? 'ring-4 ring-white' : ''}`}>GND</div>
                   </div>
                </div>
             </div>
@@ -583,7 +583,7 @@ export default function App() {
                       <div key={i} className="flex flex-col items-center gap-2">
                          <SwitchInput index={i} isOn={val} onToggle={() => { setSwitches(sw => sw.map((s, idx) => idx === i ? !s : s)); }} />
                          <div data-pin-id={`sw-unit:sw:${i}`} onMouseEnter={() => setHoveredPin(`sw-unit:sw:${i}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`sw-unit:sw:${i}`)} 
-                           className={`w-12 h-8 bg-black rounded border border-blue-500/40 cursor-pointer hover:bg-blue-900/40 transition-all flex items-center justify-center text-[8px] text-white/20 ${activePin === `sw-unit:sw:${i}` ? 'ring-2 ring-white' : ''}`}>SW{i}</div>
+                           className={`w-12 h-8 rounded border border-blue-500/40 cursor-pointer hover:bg-blue-900/40 transition-all flex items-center justify-center text-[10px] font-black text-blue-400 drop-shadow-[0_0_3px_#3b82f6] relative z-10 ${activePin === `sw-unit:sw:${i}` ? 'ring-2 ring-white' : ''}`}>SW{i}</div>
                       </div>
                     ))}
                   </div>
@@ -597,7 +597,7 @@ export default function App() {
                       <div className="flex items-center gap-8">
                         <div className={`w-10 h-10 rounded-full transition-all ${clockState ? 'bg-amber-400 shadow-[0_0_20px_#fbbf24]' : 'bg-amber-950/40'}`}></div>
                         <div data-pin-id="clk:clk" onMouseEnter={() => setHoveredPin("clk:clk")} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick("clk:clk")} 
-                          className={`w-20 h-12 bg-amber-600 rounded border-2 border-amber-500/40 flex items-center justify-center font-black text-white text-sm shadow-lg cursor-pointer hover:bg-amber-500 transition-all ${activePin === 'clk:clk' ? 'ring-2 ring-white' : ''}`}>CLK</div>
+                          className={`w-20 h-12 rounded border-2 border-amber-500/40 flex items-center justify-center font-black text-amber-500 drop-shadow-[0_0_5px_#f59e0b] text-sm shadow-lg cursor-pointer hover:bg-amber-500/20 transition-all ${activePin === 'clk:clk' ? 'ring-2 ring-white' : ''}`}>CLK</div>
                       </div>
                       <div className="w-full space-y-1">
                         <div className="flex justify-between text-[9px] font-black text-white/30 px-1"><span>1Hz</span><span className="text-amber-500">{clockFreq}Hz</span><span>20Hz</span></div>
@@ -613,12 +613,12 @@ export default function App() {
                     <div className="ic-realistic w-[120px] h-[240px] p-6 flex flex-col items-center justify-center cursor-move group" onMouseDown={(e) => startDrag(e, ent.id)}>
                         <div className="absolute left-[-30px] top-8 bottom-8 flex flex-col justify-between">
                             {[1,2,3,4,5,6,7].map(p => (
-                                <div key={p} data-pin-id={`${ent.id}:p:${p}`} onMouseEnter={() => setHoveredPin(`${ent.id}:p:${p}`)} onMouseLeave={() => setHoveredPin(null)} onClick={(e) => { e.stopPropagation(); handlePinClick(`${ent.id}:p:${p}`); }} className={`w-12 h-10 ic-pin rounded-l flex items-center justify-center text-[12px] text-black font-black transition-all ${activePin === `${ent.id}:p:${p}` ? 'bg-amber-400 scale-125 ring-1 ring-white' : ''}`}>{p}</div>
+                                <div key={p} data-pin-id={`${ent.id}:p:${p}`} onMouseEnter={() => setHoveredPin(`${ent.id}:p:${p}`)} onMouseLeave={() => setHoveredPin(null)} onClick={(e) => { e.stopPropagation(); handlePinClick(`${ent.id}:p:${p}`); }} className={`w-12 h-10 ic-pin rounded-l flex items-center justify-center text-[12px] text-amber-400 drop-shadow-[0_0_3px_#fbbf24] font-black transition-all ${activePin === `${ent.id}:p:${p}` ? 'bg-amber-400/40 scale-125 ring-1 ring-white' : ''}`}>{p}</div>
                             ))}
                         </div>
                         <div className="absolute right-[-30px] top-8 bottom-8 flex flex-col justify-between">
                             {[14,13,12,11,10,9,8].map(p => (
-                                <div key={p} data-pin-id={`${ent.id}:p:${p}`} onMouseEnter={() => setHoveredPin(`${ent.id}:p:${p}`)} onMouseLeave={() => setHoveredPin(null)} onClick={(e) => { e.stopPropagation(); handlePinClick(`${ent.id}:p:${p}`); }} className={`w-12 h-10 ic-pin rounded-r flex items-center justify-center text-[12px] text-black font-black transition-all ${activePin === `${ent.id}:p:${p}` ? 'bg-amber-400 scale-125 ring-1 ring-white' : ''}`}>{p}</div>
+                                <div key={p} data-pin-id={`${ent.id}:p:${p}`} onMouseEnter={() => setHoveredPin(`${ent.id}:p:${p}`)} onMouseLeave={() => setHoveredPin(null)} onClick={(e) => { e.stopPropagation(); handlePinClick(`${ent.id}:p:${p}`); }} className={`w-12 h-10 ic-pin rounded-r flex items-center justify-center text-[12px] text-amber-400 drop-shadow-[0_0_3px_#fbbf24] font-black transition-all ${activePin === `${ent.id}:p:${p}` ? 'bg-amber-400/40 scale-125 ring-1 ring-white' : ''}`}>{p}</div>
                             ))}
                         </div>
                         <div className="rotate-90 text-white/80 font-black tracking-widest text-2xl">{GATE_DATASHEET[ent.gateType!].model}</div>

@@ -13,8 +13,8 @@ const SevenSegment: React.FC<SevenSegmentProps> = ({ segments }) => {
   const inactiveColor = "bg-red-950/20";
 
   return (
-    <div className="bg-[#1a1a1a] p-3 rounded-md border border-[#333] shadow-inner flex flex-col items-center">
-      <div className="relative w-12 h-20">
+    <div className="p-3 rounded-md border border-white/20 shadow-inner flex flex-col items-center bg-black/40">
+      <div className="relative w-12 h-20 bg-black/60 rounded border border-white/5">
         {/* Segment a */}
         <div className={`absolute top-0 left-2 right-2 h-2 rounded-full transition-all ${segments.a ? activeColor : inactiveColor}`}></div>
         {/* Segment f */}

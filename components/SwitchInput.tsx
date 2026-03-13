@@ -12,12 +12,12 @@ const SwitchInput: React.FC<SwitchInputProps> = ({ index, isOn, onToggle }) => {
     <div className="flex flex-col items-center gap-1 group">
       <div 
         onClick={(e) => { e.stopPropagation(); onToggle(); }}
-        className="w-12 h-20 bg-[#0f1115] rounded border border-white/5 shadow-inner flex flex-col items-center justify-between p-1.5 cursor-pointer hover:border-blue-500/50 transition-all relative"
+        className="w-12 h-20 rounded border border-white/20 shadow-inner flex flex-col items-center justify-between p-1.5 cursor-pointer hover:border-blue-500/50 transition-all relative"
       >
         <span className="text-[10px] text-gray-500 font-bold select-none opacity-50">HIGH</span>
         
         {/* Switch Track */}
-        <div className="w-6 h-10 bg-black/80 rounded-sm relative flex items-center justify-center overflow-hidden border border-white/5 shadow-2xl">
+        <div className="w-6 h-10 rounded-sm relative flex items-center justify-center overflow-hidden border border-white/5 shadow-2xl">
            {/* Slider Handle */}
            <div className={`absolute w-5 h-6 bg-gradient-to-b from-gray-100 to-gray-400 rounded-sm shadow-lg transition-all duration-200 ease-in-out ${
              isOn ? '-translate-y-2' : 'translate-y-2'
