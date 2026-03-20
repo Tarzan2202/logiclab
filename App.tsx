@@ -24,6 +24,7 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [shortCircuitAlert, setShortCircuitAlert] = useState(false);
   const [selectedGateInfo, setSelectedGateInfo] = useState<GateType | null>(null);
+  const [powerOn, setPowerOn] = useState(false);
   
   // Logic Probe States
   const [probeConnectedPin, setProbeConnectedPin] = useState<string | null>(null);
@@ -122,6 +123,7 @@ export default function App() {
   }, [updatePositions]);
 
   const getPinValue = useCallback((pid: string, visited = new Set<string>()): number => {
+    if (!powerOn) return 0;
     const [eid, type, sub] = pid.split(':');
     if (type === 'vcc') return 5;
     if (type === 'gnd') return 0;
@@ -270,17 +272,48 @@ export default function App() {
   };
 
   const BreadboardUnit = () => (
-    <div className="breadboard-unit">
-      <div className="power-rail">
+    <div className="breadboard-unit relative">
+      {/* Column Numbers */}
+      <div className="flex pl-6 gap-[3px] mb-1">
+        {Array(60).fill(0).map((_, i) => (
+          <div key={i} className="w-[12px] text-[8px] text-black/60 text-center font-bold">
+            {(i + 1) % 5 === 0 || i === 0 ? i + 1 : ''}
+          </div>
+        ))}
+      </div>
+
+      <div className="power-rail pl-6">
         <div className="rail-line-red"></div>
         <div className="rail-holes">{Array(60).fill(0).map((_, i) => <div key={i} className="hole"></div>)}</div>
         <div className="rail-line-blue"></div>
         <div className="rail-holes">{Array(60).fill(0).map((_, i) => <div key={i} className="hole"></div>)}</div>
       </div>
-      <div className="hole-grid">{Array(60 * 5).fill(0).map((_, i) => <div key={i} className="hole"></div>)}</div>
-      <div className="h-4 bg-black/5 rounded-sm"></div>
-      <div className="hole-grid">{Array(60 * 5).fill(0).map((_, i) => <div key={i} className="hole"></div>)}</div>
-      <div className="power-rail">
+
+      <div className="flex gap-2">
+        {/* Row Letters A-E */}
+        <div className="flex flex-col gap-[3px] pt-[2px]">
+          {['A', 'B', 'C', 'D', 'E'].map(l => (
+            <div key={l} className="h-[12px] w-[12px] text-[8px] text-black/60 flex items-center justify-center font-bold">{l}</div>
+          ))}
+        </div>
+        <div className="hole-grid">{Array(60 * 5).fill(0).map((_, i) => <div key={i} className="hole"></div>)}</div>
+      </div>
+
+      <div className="h-6 bg-black/5 rounded-sm mx-6 flex items-center">
+        <div className="w-full h-[1px] bg-black/10"></div>
+      </div>
+
+      <div className="flex gap-2">
+        {/* Row Letters F-J */}
+        <div className="flex flex-col gap-[3px] pt-[2px]">
+          {['F', 'G', 'H', 'I', 'J'].map(l => (
+            <div key={l} className="h-[12px] w-[12px] text-[8px] text-black/60 flex items-center justify-center font-bold">{l}</div>
+          ))}
+        </div>
+        <div className="hole-grid">{Array(60 * 5).fill(0).map((_, i) => <div key={i} className="hole"></div>)}</div>
+      </div>
+
+      <div className="power-rail pl-6">
         <div className="rail-line-red"></div>
         <div className="rail-holes">{Array(60).fill(0).map((_, i) => <div key={i} className="hole"></div>)}</div>
         <div className="rail-line-blue"></div>
@@ -413,125 +446,156 @@ export default function App() {
             className="pcb-board"
             style={{ width: `${BOARD_WIDTH}px`, height: `${BOARD_HEIGHT}px`, transform: `scale(${scale})` }}
           >
-            {/* Logic Probe Module (Fixed) */}
-            <div className="absolute right-[40px] top-[280px] w-[200px]">
-              <div className="nx-panel p-5 border-r-2 border-emerald-500/40 flex flex-col items-center">
-                  <div className="silk-label mb-4 text-emerald-400 uppercase text-xs tracking-widest">Logic Probe</div>
-                 <div className="flex gap-6 mb-6 bg-black/60 p-3 rounded-lg border border-white/5">
+            {/* Top Row: Power & Supply */}
+            <div className="absolute left-[80px] top-[60px] flex gap-6">
+              <div className="nx-panel p-4 border-l-4 border-emerald-500 w-[220px] h-[160px] flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm">
+                  <div className="bg-emerald-500 text-black px-6 py-1 font-black text-xs mb-4 rounded-sm tracking-widest uppercase">Main Power</div>
+                  <div className="flex gap-4">
+                    <button 
+                      onClick={() => setPowerOn(true)}
+                      className={`w-14 h-14 rounded-full font-black text-xs transition-all border-4 flex items-center justify-center ${powerOn ? 'bg-emerald-500 text-white border-emerald-300 shadow-[0_0_25px_#10b981]' : 'bg-emerald-950/20 text-emerald-500/40 border-emerald-900/40'}`}
+                    >
+                      ON
+                    </button>
+                    <button 
+                      onClick={() => setPowerOn(false)}
+                      className={`w-14 h-14 rounded-full font-black text-xs transition-all border-4 flex items-center justify-center ${!powerOn ? 'bg-red-600 text-white border-red-400 shadow-[0_0_25px_red]' : 'bg-red-950/20 text-red-500/40 border-red-950/40'}`}
+                    >
+                      OFF
+                    </button>
+                  </div>
+              </div>
+
+              <div className="nx-panel p-4 border-t-4 border-red-600 w-[240px] h-[160px] bg-black/40 backdrop-blur-sm">
+                  <div className="silk-label text-red-500 text-center mb-4 uppercase text-[10px] tracking-widest font-black">DC Power Supply</div>
+                  <div className="flex justify-around items-center h-[70px]">
                     <div className="flex flex-col items-center gap-1">
-                       <div className={`w-6 h-6 rounded-full transition-all duration-75 ${circuitStatus.probeVal >= 2.5 ? 'bg-red-500 shadow-[0_0_20px_red]' : 'bg-red-950/20'}`}></div>
-                        <span className={`text-[9px] font-black ${circuitStatus.probeVal >= 2.5 ? 'text-red-500' : 'text-red-500/40'}`}>HI</span>
+                      <div data-pin-id="pwr:vcc" onMouseEnter={() => setHoveredPin("pwr:vcc")} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick("pwr:vcc")} 
+                        className={`w-12 h-12 rounded-full border-4 border-red-600/60 cursor-pointer shadow-[0_0_15px_rgba(239,68,68,0.3)] flex items-center justify-center font-black text-red-500 drop-shadow-[0_0_5px_#ef4444] text-[10px] hover:scale-110 transition-all ${activePin === 'pwr:vcc' ? 'ring-4 ring-white' : ''}`}>+5V</div>
+                      <span className="text-[8px] text-red-500/60 font-bold uppercase">VCC</span>
                     </div>
                     <div className="flex flex-col items-center gap-1">
-                       <div className={`w-6 h-6 rounded-full transition-all duration-75 ${circuitStatus.probeVal >= 0 && circuitStatus.probeVal < 2.5 ? 'bg-green-500 shadow-[0_0_20px_#10b981]' : 'bg-green-950/20'}`}></div>
-                        <span className={`text-[9px] font-black ${circuitStatus.probeVal >= 0 && circuitStatus.probeVal < 2.5 ? 'text-green-500' : 'text-green-500/40'}`}>LO</span>
+                      <div data-pin-id="pwr:gnd" onMouseEnter={() => setHoveredPin("pwr:gnd")} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick("pwr:gnd")} 
+                        className={`w-12 h-12 rounded-full border-4 border-white/20 cursor-pointer shadow-lg flex items-center justify-center font-black text-white/60 drop-shadow-[0_0_3px_rgba(255,255,255,0.5)] text-[10px] hover:scale-110 transition-all ${activePin === 'pwr:gnd' ? 'ring-4 ring-white' : ''}`}>GND</div>
+                      <span className="text-[8px] text-white/30 font-bold uppercase">COM</span>
                     </div>
-                 </div>
-                  <div 
-                    data-pin-id="probe:in" 
-                    onClick={() => { setIsProbing(true); setProbeConnectedPin(null); }}
-                    className={`w-16 h-12 rounded border-2 border-emerald-500/60 cursor-pointer hover:bg-emerald-600 transition-all flex items-center justify-center group ${isProbing ? 'ring-2 ring-white scale-110' : ''}`}
-                  >
-                    <i className="fas fa-search text-emerald-400 drop-shadow-[0_0_5px_#10b981] group-hover:text-white transition-colors text-xl"></i>
-                 </div>
-                  <div className="mt-4 text-[9px] text-white/20 italic tracking-widest uppercase">Probe Terminal</div>
+                  </div>
               </div>
             </div>
 
-            {/* Top Row: Debounce Switch */}
-            <div className="absolute left-[40px] top-[40px] w-[300px]">
-               <div className="nx-panel p-5 border-l-2 border-emerald-500/30 h-[220px]">
-                  <div className="silk-label mb-4 text-emerald-400 text-center uppercase text-xs tracking-widest">Debounce Switch</div>
-                  <div className="flex justify-around items-center h-[120px]">
-                    {[1, 2].map(num => (
-                      <div key={num} className="flex flex-col items-center gap-4">
-                         <button onMouseDown={() => setPulseStates(p => ({...p, [`p${num}`]: true}))} onMouseUp={() => setPulseStates(p => ({...p, [`p${num}`]: false}))}
-                            className="w-14 h-14 bg-blue-600 rounded-full border-4 border-black shadow-lg active:scale-95 active:shadow-inner transition-all flex items-center justify-center text-[9px] font-black text-white uppercase">Push</button>
-                         <div data-pin-id={`pls:pls:${num}`} onMouseEnter={() => setHoveredPin(`pls:pls:${num}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`pls:pls:${num}`)} 
-                           className={`w-12 h-8 rounded border border-emerald-500/40 cursor-pointer hover:bg-emerald-900/40 transition-all flex items-center justify-center text-[10px] font-black text-emerald-400 drop-shadow-[0_0_3px_#10b981] relative z-10 ${activePin === `pls:pls:${num}` ? 'ring-2 ring-white' : ''}`}>P{num}</div>
-                      </div>
-                    ))}
-                  </div>
-               </div>
-            </div>
-
-            <div className="absolute left-[360px] top-[40px] w-[780px]">
-               <div className="nx-panel p-5 border-t-2 border-red-600/30 h-[220px]">
-                  <div className="silk-label mb-4 text-red-500 text-center uppercase text-xs tracking-widest">Logic Monitor</div>
-                  <div className="grid grid-cols-8 gap-x-2 px-2 h-[120px] items-center">
+            {/* Top Row: Logic Monitor */}
+            <div className="absolute left-[752px] top-[60px]">
+              <div className="nx-panel p-4 border-t-4 border-red-600 w-[580px] h-[160px] bg-black/40 backdrop-blur-sm">
+                  <div className="silk-label mb-4 text-red-500 text-center uppercase text-[10px] tracking-widest font-black">Logic Monitor (LEDs)</div>
+                  <div className="grid grid-cols-8 gap-x-2 px-2 h-[70px] items-center">
                     {Array(8).fill(0).map((_, i) => (
-                      <div key={i} className="flex flex-col items-center justify-between gap-4">
+                      <div key={i} className="flex flex-col items-center justify-between gap-2">
                         <Bulb isOn={circuitStatus.ledStates[i] >= 0.1} brightness={circuitStatus.ledStates[i] / 5} />
                         <div data-pin-id={`led-unit:in:${i}`} onMouseEnter={() => setHoveredPin(`led-unit:in:${i}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`led-unit:in:${i}`)} 
-                          className={`w-12 h-8 rounded border border-red-500/40 cursor-pointer hover:bg-red-900/40 transition-all flex items-center justify-center text-[10px] font-black text-red-500 drop-shadow-[0_0_3px_#ef4444] relative z-10 ${activePin === `led-unit:in:${i}` ? 'ring-2 ring-white' : ''}`}>L{i}</div>
+                          className={`w-9 h-6 rounded border border-red-500/40 cursor-pointer hover:bg-red-900/40 transition-all flex items-center justify-center text-[9px] font-black text-red-500 drop-shadow-[0_0_3px_#ef4444] relative z-10 ${activePin === `led-unit:in:${i}` ? 'ring-2 ring-white' : ''}`}>L{i}</div>
                       </div>
                     ))}
                   </div>
-               </div>
+              </div>
             </div>
 
-            <div className="absolute left-[1160px] top-[40px] w-[400px]">
-               <div className="nx-panel p-5 border-r-2 border-emerald-500/30 h-[220px]">
-                  <div className="silk-label mb-2 text-emerald-400 text-center uppercase text-xs tracking-widest">Hex Display</div>
-                  <div className="flex gap-6 justify-center mb-2 scale-90">
+            {/* Top Row: Hex Display */}
+            <div className="absolute right-[80px] top-[60px]">
+              <div className="nx-panel p-4 border-r-4 border-emerald-500 w-[320px] h-[220px] bg-black/40 backdrop-blur-sm">
+                  <div className="silk-label mb-2 text-emerald-400 text-center uppercase text-[10px] tracking-widest font-black">Hexadecimal Display</div>
+                  <div className="flex gap-4 justify-center mb-2 scale-75">
                     <SevenSegment segments={circuitStatus.segStates[0]} />
                     <SevenSegment segments={circuitStatus.segStates[1]} />
                   </div>
-                  <div className="flex gap-4 w-full justify-center scale-75 origin-top">
+                  <div className="flex gap-2 w-full justify-center scale-75 origin-top">
                      {[0, 1].map(idx => (
                        <div key={idx} className="grid grid-cols-4 gap-1">
                          {['a','b','c','d','e','f','g','dp'].map(s => (
                            <div key={s} data-pin-id={`seg:${idx}:${s}`} onMouseEnter={() => setHoveredPin(`seg:${idx}:${s}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`seg:${idx}:${s}`)} 
-                             className={`w-7 h-7 rounded border border-emerald-500/40 text-[10px] font-black text-emerald-400 drop-shadow-[0_0_3px_#10b981] flex items-center justify-center cursor-pointer hover:bg-emerald-900/40 transition-all relative z-10 ${activePin === `seg:${idx}:${s}` ? 'ring-1 ring-white' : ''}`}>{s.toUpperCase()}</div>
+                             className={`w-6 h-6 rounded border border-emerald-500/40 text-[8px] font-black text-emerald-400 drop-shadow-[0_0_3px_#10b981] flex items-center justify-center cursor-pointer hover:bg-emerald-900/40 transition-all relative z-10 ${activePin === `seg:${idx}:${s}` ? 'ring-1 ring-white' : ''}`}>{s.toUpperCase()}</div>
                          ))}
                        </div>
                      ))}
                   </div>
-               </div>
-            </div>
-
-            <div className="absolute right-[40px] top-[560px] w-[200px]">
-               <div className="nx-panel p-5 border-r-2 border-amber-500/30 h-[200px] flex flex-col items-center">
-                  <div className="silk-label mb-4 text-amber-500 uppercase text-xs tracking-widest">Buzzer</div>
-                  <div className={`w-16 h-16 bg-neutral-900 rounded-full border-4 border-black shadow-inner flex items-center justify-center relative ${circuitStatus.buzzerActive > 0.5 ? 'animate-pulse' : ''}`}>
-                    <div className="w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center">
-                      <i className={`fas fa-volume-up transition-colors text-lg ${circuitStatus.buzzerActive > 0.5 ? 'text-amber-500 shadow-[0_0_20px_amber]' : 'text-white/10'}`} style={{ opacity: Math.max(0.1, circuitStatus.buzzerActive / 5) }}></i>
-                    </div>
-                  </div>
-                  <div data-pin-id="buz:in" onMouseEnter={() => setHoveredPin("buz:in")} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick("buz:in")} 
-                    className={`w-14 h-10 rounded border border-amber-500/40 mt-4 cursor-pointer hover:bg-amber-900/40 transition-all flex items-center justify-center text-[10px] font-black text-amber-500 drop-shadow-[0_0_3px_#f59e0b] relative z-10 ${activePin === 'buz:in' ? 'ring-2 ring-white' : ''}`}>IN</div>
-               </div>
+              </div>
             </div>
 
             {/* Middle Left: 4-Channel Driver */}
-            <div className="absolute left-[40px] top-[280px] w-[220px]">
-               <div className="nx-panel p-4 border-l-2 border-purple-500/40 h-[260px]">
-                  <div className="silk-label mb-4 text-purple-400 text-center text-[10px] uppercase tracking-widest">4-CH Driver (ULN2003)</div>
+            <div className="absolute left-[80px] top-[260px] w-[220px]">
+               <div className="nx-panel p-4 border-l-4 border-purple-500 h-[240px] bg-black/40 backdrop-blur-sm">
+                  <div className="silk-label mb-4 text-purple-400 text-center text-[9px] uppercase tracking-widest font-black">4-CH Driver (ULN2003)</div>
                   <div className="grid grid-cols-2 gap-4">
                      <div className="flex flex-col gap-2">
-                        <span className="text-[9px] text-white/30 text-center">INPUT</span>
+                        <span className="text-[8px] text-white/30 text-center uppercase font-bold">Input</span>
                         {[0,1,2,3].map(i => (
                            <div key={i} data-pin-id={`drv4:in:${i}`} onMouseEnter={() => setHoveredPin(`drv4:in:${i}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`drv4:in:${i}`)} 
-                             className={`w-full h-8 rounded border border-purple-500/40 cursor-pointer hover:bg-purple-900/40 transition-all flex items-center justify-center text-[10px] font-black text-purple-400 drop-shadow-[0_0_3px_#a855f7] relative z-10 ${activePin === `drv4:in:${i}` ? 'ring-2 ring-white' : ''}`}>IN{i+1}</div>
+                             className={`w-full h-7 rounded border border-purple-500/40 cursor-pointer hover:bg-purple-900/40 transition-all flex items-center justify-center text-[9px] font-black text-purple-400 drop-shadow-[0_0_3px_#a855f7] relative z-10 ${activePin === `drv4:in:${i}` ? 'ring-2 ring-white' : ''}`}>IN{i+1}</div>
                         ))}
                      </div>
                      <div className="flex flex-col gap-2">
-                        <span className="text-[9px] text-white/30 text-center">OUTPUT</span>
+                        <span className="text-[8px] text-white/30 text-center uppercase font-bold">Output</span>
                         {[0,1,2,3].map(i => (
                            <div key={i} data-pin-id={`drv4:out:${i}`} onMouseEnter={() => setHoveredPin(`drv4:out:${i}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`drv4:out:${i}`)} 
-                             className={`w-full h-8 rounded border border-purple-500/40 cursor-pointer hover:bg-purple-900/40 transition-all flex items-center justify-center text-[10px] font-black text-purple-400 drop-shadow-[0_0_3px_#a855f7] relative z-10 ${activePin === `drv4:out:${i}` ? 'ring-2 ring-white' : ''}`}>OUT{i+1}</div>
+                             className={`w-full h-7 rounded border border-purple-500/40 cursor-pointer hover:bg-purple-900/40 transition-all flex items-center justify-center text-[9px] font-black text-purple-400 drop-shadow-[0_0_3px_#a855f7] relative z-10 ${activePin === `drv4:out:${i}` ? 'ring-2 ring-white' : ''}`}>OUT{i+1}</div>
                         ))}
                      </div>
                   </div>
                </div>
             </div>
 
+            {/* Middle Center: Breadboard */}
+            <div className="absolute top-[320px] left-1/2 -translate-x-1/2 scale-110">
+                <BreadboardUnit />
+            </div>
 
-            <div className="absolute left-[40px] top-[560px] w-[300px]">
-               <div className="nx-panel p-5 border-l-2 border-cyan-500/30 h-[200px]">
-                  <div className="silk-label mb-3 text-cyan-400 text-center uppercase text-xs tracking-widest">Voltage Adjuster</div>
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="text-xl font-black text-cyan-400 font-mono tracking-tighter">{voltageValue.toFixed(1)}V</div>
+            {/* Middle Right: Logic Probe */}
+            <div className="absolute right-[80px] top-[300px]">
+              <div className="nx-panel p-4 border-r-4 border-emerald-500 w-[200px] h-[220px] flex flex-col items-center bg-black/40 backdrop-blur-sm">
+                  <div className="silk-label mb-4 text-emerald-400 uppercase text-[10px] tracking-widest font-black">Logic Probe</div>
+                  <div className="flex gap-4 mb-4 bg-black/60 p-2 rounded-lg border border-white/5">
+                    <div className="flex flex-col items-center gap-1">
+                       <div className={`w-5 h-5 rounded-full transition-all duration-75 ${circuitStatus.probeVal >= 2.5 ? 'bg-red-500 shadow-[0_0_15px_red]' : 'bg-red-950/20'}`}></div>
+                        <span className={`text-[8px] font-black ${circuitStatus.probeVal >= 2.5 ? 'text-red-500' : 'text-red-500/40'}`}>HI</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-1">
+                       <div className={`w-5 h-5 rounded-full transition-all duration-75 ${circuitStatus.probeVal >= 0 && circuitStatus.probeVal < 2.5 ? 'bg-green-500 shadow-[0_0_15px_#10b981]' : 'bg-green-950/20'}`}></div>
+                        <span className={`text-[8px] font-black ${circuitStatus.probeVal >= 0 && circuitStatus.probeVal < 2.5 ? 'text-green-500' : 'text-green-500/40'}`}>LO</span>
+                    </div>
+                  </div>
+                  <div 
+                    data-pin-id="probe:in" 
+                    onClick={() => { setIsProbing(true); setProbeConnectedPin(null); }}
+                    className={`w-14 h-10 rounded border-2 border-emerald-500/60 cursor-pointer hover:bg-emerald-600 transition-all flex items-center justify-center group ${isProbing ? 'ring-2 ring-white scale-110' : ''}`}
+                  >
+                    <i className="fas fa-search text-emerald-400 drop-shadow-[0_0_5px_#10b981] group-hover:text-white transition-colors text-lg"></i>
+                  </div>
+                  <div className="mt-4 text-[8px] text-white/20 italic tracking-widest uppercase font-bold">Probe Input</div>
+              </div>
+            </div>
+
+            {/* Bottom Right: Debounce Switch */}
+            <div className="absolute right-[80px] top-[760px]">
+              <div className="nx-panel p-4 border-r-4 border-blue-500 w-[200px] h-[180px] bg-black/40 backdrop-blur-sm">
+                  <div className="silk-label mb-4 text-blue-400 text-center uppercase text-[10px] tracking-widest font-black">Debounce Switch</div>
+                  <div className="flex justify-around items-center h-[80px]">
+                    {[1, 2].map(num => (
+                      <div key={num} className="flex flex-col items-center gap-2">
+                         <button onMouseDown={() => setPulseStates(p => ({...p, [`p${num}`]: true}))} onMouseUp={() => setPulseStates(p => ({...p, [`p${num}`]: false}))}
+                            className="w-10 h-10 bg-blue-600 rounded-full border-4 border-black shadow-lg active:scale-90 active:shadow-inner transition-all flex items-center justify-center text-[7px] font-black text-white uppercase">Push</button>
+                         <div data-pin-id={`pls:pls:${num}`} onMouseEnter={() => setHoveredPin(`pls:pls:${num}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`pls:pls:${num}`)} 
+                           className={`w-9 h-6 rounded border border-blue-500/40 cursor-pointer hover:bg-blue-900/40 transition-all flex items-center justify-center text-[9px] font-black text-blue-400 drop-shadow-[0_0_3px_#3b82f6] relative z-10 ${activePin === `pls:pls:${num}` ? 'ring-2 ring-white' : ''}`}>P{num}</div>
+                      </div>
+                    ))}
+                  </div>
+              </div>
+            </div>
+
+            {/* Bottom Left: Voltage Adjuster & Buzzer */}
+            <div className="absolute left-[80px] top-[540px] flex flex-col gap-6">
+               <div className="nx-panel p-4 border-l-4 border-cyan-500 w-[240px] h-[160px] bg-black/40 backdrop-blur-sm">
+                  <div className="silk-label mb-2 text-cyan-400 text-center uppercase text-[10px] tracking-widest font-black">Voltage Adjuster</div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="text-lg font-black text-cyan-400 font-mono tracking-tighter">{voltageValue.toFixed(1)}V</div>
                     <input 
                       type="range" 
                       min="0" 
@@ -539,71 +603,70 @@ export default function App() {
                       step="0.1" 
                       value={voltageValue} 
                       onChange={(e) => setVoltageValue(parseFloat(e.target.value))} 
-                      className="w-full h-1.5 bg-cyan-900 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                      className="w-full h-1 bg-cyan-900 rounded-lg appearance-none cursor-pointer accent-cyan-400"
                     />
-                    <div className="flex items-center gap-6 mt-2">
-                       <div className={`w-5 h-5 rounded-full ${voltageValue >= 0.1 ? 'bg-cyan-400 shadow-[0_0_15px_cyan]' : 'bg-cyan-950/40'}`} style={{ opacity: Math.max(0.2, voltageValue / 5) }}></div>
+                    <div className="flex items-center gap-4 mt-2">
+                       <div className={`w-4 h-4 rounded-full ${voltageValue >= 0.1 ? 'bg-cyan-400 shadow-[0_0_12px_cyan]' : 'bg-cyan-950/40'}`} style={{ opacity: Math.max(0.2, voltageValue / 5) }}></div>
                        <div 
                          data-pin-id="vadj:vadj:out" 
                          onMouseEnter={() => setHoveredPin("vadj:vadj:out")} 
                          onMouseLeave={() => setHoveredPin(null)} 
                          onClick={() => handlePinClick("vadj:vadj:out")} 
-                         className={`w-20 h-10 rounded border border-cyan-500/40 flex items-center justify-center font-black text-cyan-400 text-[11px] drop-shadow-[0_0_4px_#22d3ee] cursor-pointer hover:bg-cyan-900/40 transition-all relative z-10 ${activePin === 'vadj:vadj:out' ? 'ring-2 ring-white' : ''}`}
+                         className={`w-14 h-7 rounded border border-cyan-500/40 flex items-center justify-center font-black text-cyan-400 text-[9px] drop-shadow-[0_0_4px_#22d3ee] cursor-pointer hover:bg-cyan-900/40 transition-all relative z-10 ${activePin === 'vadj:vadj:out' ? 'ring-2 ring-white' : ''}`}
                        >
                          OUT
                        </div>
                     </div>
                   </div>
                </div>
-            </div>
 
-            {/* Breadboard */}
-            <div className="absolute top-[400px] left-1/2 -translate-x-1/2">
-                <BreadboardUnit />
-            </div>
-
-            {/* Bottom Row: Power */}
-            <div className="absolute left-[40px] top-[780px] w-[300px]">
-               <div className="nx-panel p-6 border-b-2 border-red-600/30 h-[180px]">
-                  <div className="silk-label text-red-500 text-center mb-4 uppercase text-xs tracking-widest">Power Supply</div>
-                  <div className="flex justify-around items-center">
-                     <div data-pin-id="pwr:vcc" onMouseEnter={() => setHoveredPin("pwr:vcc")} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick("pwr:vcc")} 
-                       className={`w-16 h-16 rounded-full border-4 border-red-600/40 cursor-pointer shadow-[0_0_15px_rgba(239,68,68,0.3)] flex items-center justify-center font-black text-red-500 drop-shadow-[0_0_5px_#ef4444] text-sm hover:scale-105 transition-all ${activePin === 'pwr:vcc' ? 'ring-4 ring-white' : ''}`}>+5V</div>
-                     <div data-pin-id="pwr:gnd" onMouseEnter={() => setHoveredPin("pwr:gnd")} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick("pwr:gnd")} 
-                       className={`w-16 h-16 rounded-full border-4 border-white/10 cursor-pointer shadow-lg flex items-center justify-center font-black text-white/60 drop-shadow-[0_0_3px_rgba(255,255,255,0.5)] text-sm hover:scale-105 transition-all ${activePin === 'pwr:gnd' ? 'ring-4 ring-white' : ''}`}>GND</div>
-                  </div>
-               </div>
-            </div>
-
-            <div className="absolute left-1/2 -translate-x-1/2 top-[780px] w-[880px]">
-               <div className="nx-panel p-5 border-b-2 border-blue-500/30 h-[180px]">
-                  <div className="silk-label mb-4 text-blue-400 text-center uppercase text-xs tracking-widest">Digital Input Switches</div>
-                  <div className="grid grid-cols-8 gap-x-2 px-2">
-                    {switches.map((val, i) => (
-                      <div key={i} className="flex flex-col items-center gap-2">
-                         <SwitchInput index={i} isOn={val} onToggle={() => { setSwitches(sw => sw.map((s, idx) => idx === i ? !s : s)); }} />
-                         <div data-pin-id={`sw-unit:sw:${i}`} onMouseEnter={() => setHoveredPin(`sw-unit:sw:${i}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`sw-unit:sw:${i}`)} 
-                           className={`w-12 h-8 rounded border border-blue-500/40 cursor-pointer hover:bg-blue-900/40 transition-all flex items-center justify-center text-[10px] font-black text-blue-400 drop-shadow-[0_0_3px_#3b82f6] relative z-10 ${activePin === `sw-unit:sw:${i}` ? 'ring-2 ring-white' : ''}`}>SW{i}</div>
-                      </div>
-                    ))}
-                  </div>
-               </div>
-            </div>
-
-            <div className="absolute right-[40px] top-[780px] w-[300px]">
-               <div className="nx-panel p-5 border-b-2 border-amber-500/30 h-[180px]">
-                   <div className="silk-label mb-3 text-amber-500 text-center uppercase text-xs tracking-widest">Pulse Generator</div>
-                   <div className="flex flex-col items-center gap-4">
-                      <div className="flex items-center gap-8">
-                        <div className={`w-10 h-10 rounded-full transition-all ${clockState ? 'bg-amber-400 shadow-[0_0_20px_#fbbf24]' : 'bg-amber-950/40'}`}></div>
+               <div className="nx-panel p-4 border-l-4 border-amber-500 h-[180px] bg-black/40 backdrop-blur-sm">
+                   <div className="silk-label mb-2 text-amber-500 text-center uppercase text-[10px] tracking-widest font-black">Pulse Generator</div>
+                   <div className="flex flex-col items-center gap-3">
+                      <div className="flex items-center gap-6">
+                        <div className={`w-8 h-8 rounded-full transition-all ${clockState ? 'bg-amber-400 shadow-[0_0_15px_#fbbf24]' : 'bg-amber-950/40'}`}></div>
                         <div data-pin-id="clk:clk" onMouseEnter={() => setHoveredPin("clk:clk")} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick("clk:clk")} 
-                          className={`w-20 h-12 rounded border-2 border-amber-500/40 flex items-center justify-center font-black text-amber-500 drop-shadow-[0_0_5px_#f59e0b] text-sm shadow-lg cursor-pointer hover:bg-amber-500/20 transition-all ${activePin === 'clk:clk' ? 'ring-2 ring-white' : ''}`}>CLK</div>
+                          className={`w-14 h-9 rounded border-2 border-amber-500/40 flex items-center justify-center font-black text-amber-500 drop-shadow-[0_0_5px_#f59e0b] text-[10px] shadow-lg cursor-pointer hover:bg-amber-500/20 transition-all ${activePin === 'clk:clk' ? 'ring-2 ring-white' : ''}`}>CLK</div>
                       </div>
                       <div className="w-full space-y-1">
-                        <div className="flex justify-between text-[9px] font-black text-white/30 px-1"><span>1Hz</span><span className="text-amber-500">{clockFreq}Hz</span><span>20Hz</span></div>
+                        <div className="flex justify-between text-[8px] font-black text-white/30 px-1 uppercase"><span>1Hz</span><span className="text-amber-500">{clockFreq}Hz</span><span>20Hz</span></div>
                         <input type="range" min="1" max="20" value={clockFreq} onChange={(e) => setClockFreq(parseInt(e.target.value))} className="w-full h-1 bg-amber-900 rounded-lg appearance-none cursor-pointer accent-amber-500" />
                       </div>
                    </div>
+               </div>
+            </div>
+
+            {/* Bottom Right: Buzzer */}
+            <div className="absolute right-[80px] top-[540px] w-[240px]">
+               <div className="nx-panel p-4 border-r-4 border-amber-500 w-[240px] h-[160px] flex flex-col items-center bg-black/40 backdrop-blur-sm">
+                  <div className="silk-label mb-3 text-amber-500 uppercase text-[10px] tracking-widest font-black text-center">Buzzer</div>
+                  <div className={`w-12 h-12 bg-neutral-900 rounded-full border-4 border-black shadow-inner flex items-center justify-center relative ${circuitStatus.buzzerActive > 0.5 ? 'animate-pulse' : ''}`}>
+                    <div className="w-7 h-7 bg-neutral-800 rounded-full flex items-center justify-center">
+                      <i className={`fas fa-volume-up transition-colors text-xs ${circuitStatus.buzzerActive > 0.5 ? 'text-amber-500 shadow-[0_0_15px_amber]' : 'text-white/10'}`} style={{ opacity: Math.max(0.1, circuitStatus.buzzerActive / 5) }}></i>
+                    </div>
+                  </div>
+                  <div data-pin-id="buz:in" onMouseEnter={() => setHoveredPin("buz:in")} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick("buz:in")} 
+                    className={`w-10 h-7 rounded border border-amber-500/40 mt-3 cursor-pointer hover:bg-amber-900/40 transition-all flex items-center justify-center text-[9px] font-black text-amber-500 drop-shadow-[0_0_3px_#f59e0b] relative z-10 ${activePin === 'buz:in' ? 'ring-2 ring-white' : ''}`}>IN</div>
+               </div>
+            </div>
+
+            {/* Bottom Row: Digital Input Switches */}
+            <div className="absolute left-1/2 -translate-x-1/2 top-[760px] w-[900px]">
+               <div className="nx-panel p-4 border-b-4 border-blue-500 h-[180px] bg-black/40 backdrop-blur-sm">
+                  <div className="silk-label mb-4 text-blue-400 text-center uppercase text-[10px] tracking-widest font-black">Digital Input Switches</div>
+                  <div className="grid grid-cols-8 gap-x-2 px-4">
+                    {switches.map((val, i) => (
+                      <div key={i} className="flex flex-col items-center gap-2">
+                         <div className="flex flex-col items-center text-[7px] font-black text-white/30 uppercase gap-1">
+                            <span>High</span>
+                            <SwitchInput index={i} isOn={val} onToggle={() => { setSwitches(sw => sw.map((s, idx) => idx === i ? !s : s)); }} />
+                            <span>Low</span>
+                         </div>
+                         <div data-pin-id={`sw-unit:sw:${i}`} onMouseEnter={() => setHoveredPin(`sw-unit:sw:${i}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`sw-unit:sw:${i}`)} 
+                           className={`w-10 h-7 rounded border border-blue-500/40 cursor-pointer hover:bg-blue-900/40 transition-all flex items-center justify-center text-[9px] font-black text-blue-400 drop-shadow-[0_0_3px_#3b82f6] relative z-10 ${activePin === `sw-unit:sw:${i}` ? 'ring-2 ring-white' : ''}`}>SW{i}</div>
+                      </div>
+                    ))}
+                  </div>
                </div>
             </div>
 
@@ -613,15 +676,15 @@ export default function App() {
                     <div className="ic-realistic w-[120px] h-[240px] p-6 flex flex-col items-center justify-center cursor-move group" onMouseDown={(e) => startDrag(e, ent.id)}>
                         <div className="absolute left-[-30px] top-8 bottom-8 flex flex-col justify-between">
                             {[1,2,3,4,5,6,7].map(p => (
-                                <div key={p} data-pin-id={`${ent.id}:p:${p}`} onMouseEnter={() => setHoveredPin(`${ent.id}:p:${p}`)} onMouseLeave={() => setHoveredPin(null)} onClick={(e) => { e.stopPropagation(); handlePinClick(`${ent.id}:p:${p}`); }} className={`w-12 h-10 ic-pin rounded-l flex items-center justify-center text-[12px] text-amber-400 drop-shadow-[0_0_3px_#fbbf24] font-black transition-all ${activePin === `${ent.id}:p:${p}` ? 'bg-amber-400/40 scale-125 ring-1 ring-white' : ''}`}>{p}</div>
+                                <div key={p} data-pin-id={`${ent.id}:p:${p}`} onMouseEnter={() => setHoveredPin(`${ent.id}:p:${p}`)} onMouseLeave={() => setHoveredPin(null)} onClick={(e) => { e.stopPropagation(); handlePinClick(`${ent.id}:p:${p}`); }} className={`w-12 h-10 ic-pin rounded-l flex items-center justify-center text-[12px] text-white font-black transition-all ${activePin === `${ent.id}:p:${p}` ? 'bg-white/20 scale-125 ring-1 ring-white' : ''}`}>{p}</div>
                             ))}
                         </div>
                         <div className="absolute right-[-30px] top-8 bottom-8 flex flex-col justify-between">
                             {[14,13,12,11,10,9,8].map(p => (
-                                <div key={p} data-pin-id={`${ent.id}:p:${p}`} onMouseEnter={() => setHoveredPin(`${ent.id}:p:${p}`)} onMouseLeave={() => setHoveredPin(null)} onClick={(e) => { e.stopPropagation(); handlePinClick(`${ent.id}:p:${p}`); }} className={`w-12 h-10 ic-pin rounded-r flex items-center justify-center text-[12px] text-amber-400 drop-shadow-[0_0_3px_#fbbf24] font-black transition-all ${activePin === `${ent.id}:p:${p}` ? 'bg-amber-400/40 scale-125 ring-1 ring-white' : ''}`}>{p}</div>
+                                <div key={p} data-pin-id={`${ent.id}:p:${p}`} onMouseEnter={() => setHoveredPin(`${ent.id}:p:${p}`)} onMouseLeave={() => setHoveredPin(null)} onClick={(e) => { e.stopPropagation(); handlePinClick(`${ent.id}:p:${p}`); }} className={`w-12 h-10 ic-pin rounded-r flex items-center justify-center text-[12px] text-white font-black transition-all ${activePin === `${ent.id}:p:${p}` ? 'bg-white/20 scale-125 ring-1 ring-white' : ''}`}>{p}</div>
                             ))}
                         </div>
-                        <div className="rotate-90 text-white/80 font-black tracking-widest text-2xl">{GATE_DATASHEET[ent.gateType!].model}</div>
+                        <div className="rotate-90 text-black font-black tracking-widest text-2xl">{GATE_DATASHEET[ent.gateType!].model}</div>
                         <button onClick={(e) => { e.stopPropagation(); setEntities(entities.filter(x => x.id !== ent.id)); setWires(wires.filter(w => !w.from.includes(ent.id) && !w.to.includes(ent.id))); }} className="absolute -bottom-12 opacity-0 group-hover:opacity-100 bg-red-600 text-white text-[12px] px-5 py-2.5 rounded-full font-bold shadow-lg transition-all hover:bg-red-500">DELETE</button>
                     </div>
                 </div>
