@@ -124,7 +124,12 @@ export default function App() {
 
   const getPinValue = useCallback((pid: string, visited = new Set<string>()): number => {
     if (!powerOn) return 0;
-    const [eid, type, sub] = pid.split(':');
+    
+    const basePid = pid.replace(/:[ab]$/, '');
+    if (visited.has(basePid)) return 0;
+    visited.add(basePid);
+
+    const [eid, type, sub] = basePid.split(':');
     if (type === 'vcc') return 5;
     if (type === 'gnd') return 0;
     if (type === 'clk') return clockState ? 5 : 0;
@@ -138,6 +143,9 @@ export default function App() {
       const ds = GATE_DATASHEET[ent.gateType];
       const hasVcc = wires.some(w => (w.from === `${eid}:p:${ds.pins.vcc}` || w.to === `${eid}:p:${ds.pins.vcc}`));
       const hasGnd = wires.some(w => (w.from === `${eid}:p:${ds.pins.gnd}` || w.to === `${eid}:p:${ds.pins.gnd}`));
+      
+      if (pinNum === ds.pins.vcc) return 5;
+      if (pinNum === ds.pins.gnd) return 0;
       
       if (ds.pins.outputs.includes(pinNum)) {
         if (!hasVcc || !hasGnd) return 0;
@@ -166,27 +174,28 @@ export default function App() {
     if (eid === 'drv4' && type === 'out') {
       const idx = parseInt(sub);
       const inVal = getPinValue(`drv4:in:${idx}`, new Set([...visited, pid]));
-      // Sinking: If input is HIGH, output is connected to GND (0V)
-      // If input is LOW, output is High-Z (we'll treat as 5V for logic monitor visibility)
       return Math.max(0, 5 - inVal);
     }
 
-
-    if (visited.has(pid)) return 0;
-    visited.add(pid);
+    // Follow wires
+    const equivalentPids = pid.endsWith(':a') || pid.endsWith(':b') 
+      ? [basePid + ':a', basePid + ':b'] 
+      : [pid];
     
     let maxVal = 0;
-    for (const w of wires) {
-      const other = w.from === pid ? w.to : (w.to === pid ? w.from : null);
-      if (other) {
-        maxVal = Math.max(maxVal, getPinValue(other, visited));
+    for (const p of equivalentPids) {
+      for (const w of wires) {
+        const other = w.from === p ? w.to : (w.to === p ? w.from : null);
+        if (other) {
+          maxVal = Math.max(maxVal, getPinValue(other, visited));
+        }
       }
     }
     return maxVal;
-  }, [entities, wires, clockState, pulseStates, switches, voltageValue]);
+  }, [entities, wires, clockState, pulseStates, switches, voltageValue, powerOn]);
 
   const circuitStatus = useMemo(() => {
-    const ledStates = Array(8).fill(0).map((_, i) => getPinValue(`led-unit:in:${i}`));
+    const ledStates = Array(8).fill(0).map((_, i) => getPinValue(`led-unit:in:${i}:a`));
     const segStates = [
       { a: getPinValue('seg:0:a') >= 2.5, b: getPinValue('seg:0:b') >= 2.5, c: getPinValue('seg:0:c') >= 2.5, d: getPinValue('seg:0:d') >= 2.5, e: getPinValue('seg:0:e') >= 2.5, f: getPinValue('seg:0:f') >= 2.5, g: getPinValue('seg:0:g') >= 2.5, dp: getPinValue('seg:0:dp') >= 2.5 },
       { a: getPinValue('seg:1:a') >= 2.5, b: getPinValue('seg:1:b') >= 2.5, c: getPinValue('seg:1:c') >= 2.5, d: getPinValue('seg:1:d') >= 2.5, e: getPinValue('seg:1:e') >= 2.5, f: getPinValue('seg:1:f') >= 2.5, g: getPinValue('seg:1:g') >= 2.5, dp: getPinValue('seg:1:dp') >= 2.5 }
@@ -381,7 +390,7 @@ export default function App() {
       {/* Sidebar */}
       <aside className={`sidebar-transition h-full bg-[#0a0a0a] border-r border-white/5 flex flex-col z-[100] relative ${isSidebarOpen ? 'w-64' : 'w-0 opacity-0'}`}>
         <div className="p-6 border-b border-white/5">
-            <h1 className="text-emerald-500 font-black text-xl italic">NX-100+ PRO</h1>
+            <h1 className="text-emerald-500 font-black text-xl italic"> </h1>
             <p className="text-[12px] text-white/20 uppercase tracking-widest font-black">Digital Trainer</p>
         </div>
         <nav className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -485,14 +494,18 @@ export default function App() {
 
             {/* Top Row: Logic Monitor */}
             <div className="absolute left-[752px] top-[60px]">
-              <div className="nx-panel p-4 border-t-4 border-red-600 w-[580px] h-[160px] bg-black/40 backdrop-blur-sm">
+              <div className="nx-panel p-4 border-t-4 border-red-600 w-[580px] h-[210px] bg-black/40 backdrop-blur-sm overflow-hidden">
                   <div className="silk-label mb-4 text-red-500 text-center uppercase text-[10px] tracking-widest font-black">Logic Monitor (LEDs)</div>
-                  <div className="grid grid-cols-8 gap-x-2 px-2 h-[70px] items-center">
+                  <div className="grid grid-cols-8 gap-x-2 px-2 items-center">
                     {Array(8).fill(0).map((_, i) => (
-                      <div key={i} className="flex flex-col items-center justify-between gap-2">
+                      <div key={i} className="flex flex-col items-center gap-3 pt-2 px-2 pb-[10.5px] rounded border border-red-500/40 bg-red-950/10">
                         <Bulb isOn={circuitStatus.ledStates[i] >= 0.1} brightness={circuitStatus.ledStates[i] / 5} />
-                        <div data-pin-id={`led-unit:in:${i}`} onMouseEnter={() => setHoveredPin(`led-unit:in:${i}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`led-unit:in:${i}`)} 
-                          className={`w-9 h-6 rounded border border-red-500/40 cursor-pointer hover:bg-red-900/40 transition-all flex items-center justify-center text-[9px] font-black text-red-500 drop-shadow-[0_0_3px_#ef4444] relative z-10 ${activePin === `led-unit:in:${i}` ? 'ring-2 ring-white' : ''}`}>L{i}</div>
+                        <div className="flex flex-col gap-1">
+                          <div data-pin-id={`led-unit:in:${i}:a`} onMouseEnter={() => setHoveredPin(`led-unit:in:${i}:a`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`led-unit:in:${i}:a`)} 
+                            className={`w-9 h-6 rounded bg-black/40 cursor-pointer hover:bg-red-900/40 transition-all flex items-center justify-center text-[9px] font-black text-red-500 drop-shadow-[0_0_3px_#ef4444] relative z-10 ${activePin === `led-unit:in:${i}:a` ? 'ring-2 ring-white' : ''}`}>L{i}</div>
+                          <div data-pin-id={`led-unit:in:${i}:b`} onMouseEnter={() => setHoveredPin(`led-unit:in:${i}:b`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`led-unit:in:${i}:b`)} 
+                            className={`w-9 h-6 rounded bg-black/40 cursor-pointer hover:bg-red-900/40 transition-all flex items-center justify-center text-[9px] font-black text-red-500 drop-shadow-[0_0_3px_#ef4444] relative z-10 ${activePin === `led-unit:in:${i}:b` ? 'ring-2 ring-white' : ''}`}>L{i}</div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -652,18 +665,18 @@ export default function App() {
 
             {/* Bottom Row: Digital Input Switches */}
             <div className="absolute left-1/2 -translate-x-1/2 top-[760px] w-[900px]">
-               <div className="nx-panel p-4 border-b-4 border-blue-500 h-[180px] bg-black/40 backdrop-blur-sm">
+               <div className="nx-panel p-4 border-b-4 border-blue-500 h-[250px] bg-black/40 backdrop-blur-sm overflow-hidden">
                   <div className="silk-label mb-4 text-blue-400 text-center uppercase text-[10px] tracking-widest font-black">Digital Input Switches</div>
                   <div className="grid grid-cols-8 gap-x-2 px-4">
                     {switches.map((val, i) => (
-                      <div key={i} className="flex flex-col items-center gap-2">
-                         <div className="flex flex-col items-center text-[7px] font-black text-white/30 uppercase gap-1">
-                            <span>High</span>
-                            <SwitchInput index={i} isOn={val} onToggle={() => { setSwitches(sw => sw.map((s, idx) => idx === i ? !s : s)); }} />
-                            <span>Low</span>
+                      <div key={i} className="flex flex-col items-center gap-3 pt-2 px-2 pb-[10.5px] rounded border border-blue-500/40 bg-blue-950/10">
+                         <SwitchInput index={i} isOn={val} onToggle={() => { setSwitches(sw => sw.map((s, idx) => idx === i ? !s : s)); }} />
+                         <div className="flex flex-col gap-1">
+                           <div data-pin-id={`sw-unit:sw:${i}:a`} onMouseEnter={() => setHoveredPin(`sw-unit:sw:${i}:a`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`sw-unit:sw:${i}:a`)} 
+                             className={`w-10 h-7 rounded bg-black/40 cursor-pointer hover:bg-blue-900/40 transition-all flex items-center justify-center text-[9px] font-black text-blue-400 drop-shadow-[0_0_3px_#3b82f6] relative z-10 ${activePin === `sw-unit:sw:${i}:a` ? 'ring-2 ring-white' : ''}`}>SW{i}</div>
+                           <div data-pin-id={`sw-unit:sw:${i}:b`} onMouseEnter={() => setHoveredPin(`sw-unit:sw:${i}:b`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`sw-unit:sw:${i}:b`)} 
+                             className={`w-10 h-7 rounded bg-black/40 cursor-pointer hover:bg-blue-900/40 transition-all flex items-center justify-center text-[9px] font-black text-blue-400 drop-shadow-[0_0_3px_#3b82f6] relative z-10 ${activePin === `sw-unit:sw:${i}:b` ? 'ring-2 ring-white' : ''}`}>SW{i}</div>
                          </div>
-                         <div data-pin-id={`sw-unit:sw:${i}`} onMouseEnter={() => setHoveredPin(`sw-unit:sw:${i}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`sw-unit:sw:${i}`)} 
-                           className={`w-10 h-7 rounded border border-blue-500/40 cursor-pointer hover:bg-blue-900/40 transition-all flex items-center justify-center text-[9px] font-black text-blue-400 drop-shadow-[0_0_3px_#3b82f6] relative z-10 ${activePin === `sw-unit:sw:${i}` ? 'ring-2 ring-white' : ''}`}>SW{i}</div>
                       </div>
                     ))}
                   </div>
