@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect, memo } from 'react';
 import { GateType, EntityType, CircuitEntity } from './types';
 import SwitchInput from './components/SwitchInput';
 import Bulb from './components/Bulb';
@@ -11,12 +11,98 @@ interface Wire {
   to: string;   
 }
 
+  const BreadboardUnit = memo(({ activePin, hoveredPin, handlePinClick, setHoveredPin }: { activePin: string | null, hoveredPin: string | null, handlePinClick: (id: string) => void, setHoveredPin: (id: string | null) => void }) => (
+    <div className="breadboard-unit relative" id="breadboard-main">
+      {/* Column Numbers */}
+      <div className="flex pl-6 gap-[3px] mb-1">
+        {Array(60).fill(0).map((_, i) => (
+          <div key={i} className="w-[12px] text-[8px] text-black/60 text-center font-bold">
+            {(i + 1) % 5 === 0 || i === 0 ? i + 1 : ''}
+          </div>
+        ))}
+      </div>
+
+      <div className="power-rail pl-6">
+        <div className="rail-line-red"></div>
+        <div className="rail-holes">
+          {Array(60).fill(0).map((_, i) => (
+            <div key={i} data-pin-id={`bb:rail:top:vcc:${i}`} onMouseEnter={() => setHoveredPin(`bb:rail:top:vcc:${i}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`bb:rail:top:vcc:${i}`)}
+              className={`hole cursor-pointer hover:bg-red-500/40 transition-colors ${activePin === `bb:rail:top:vcc:${i}` ? 'ring-1 ring-white' : ''}`}></div>
+          ))}
+        </div>
+        <div className="rail-line-blue"></div>
+        <div className="rail-holes">
+          {Array(60).fill(0).map((_, i) => (
+            <div key={i} data-pin-id={`bb:rail:top:gnd:${i}`} onMouseEnter={() => setHoveredPin(`bb:rail:top:gnd:${i}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`bb:rail:top:gnd:${i}`)}
+              className={`hole cursor-pointer hover:bg-blue-500/40 transition-colors ${activePin === `bb:rail:top:gnd:${i}` ? 'ring-1 ring-white' : ''}`}></div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        {/* Row Letters A-E */}
+        <div className="flex flex-col gap-[3px] pt-[2px]">
+          {['A', 'B', 'C', 'D', 'E'].map(l => (
+            <div key={l} className="h-[12px] w-[12px] text-[8px] text-black/60 flex items-center justify-center font-bold">{l}</div>
+          ))}
+        </div>
+        <div className="hole-grid">
+          {['A', 'B', 'C', 'D', 'E'].map(row => (
+            Array(60).fill(0).map((_, col) => (
+              <div key={`${row}-${col}`} data-pin-id={`bb:grid:${row}:${col}`} onMouseEnter={() => setHoveredPin(`bb:grid:${row}:${col}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`bb:grid:${row}:${col}`)}
+                className={`hole cursor-pointer hover:bg-emerald-500/40 transition-colors ${activePin === `bb:grid:${row}:${col}` ? 'ring-1 ring-white' : ''}`}></div>
+            ))
+          ))}
+        </div>
+      </div>
+
+      <div className="h-[9px] bg-black/5 rounded-sm mx-6 flex items-center">
+        <div className="w-full h-[1px] bg-black/10"></div>
+      </div>
+
+      <div className="flex gap-2">
+        {/* Row Letters F-J */}
+        <div className="flex flex-col gap-[3px] pt-[2px]">
+          {['F', 'G', 'H', 'I', 'J'].map(l => (
+            <div key={l} className="h-[12px] w-[12px] text-[8px] text-black/60 flex items-center justify-center font-bold">{l}</div>
+          ))}
+        </div>
+        <div className="hole-grid">
+          {['F', 'G', 'H', 'I', 'J'].map(row => (
+            Array(60).fill(0).map((_, col) => (
+              <div key={`${row}-${col}`} data-pin-id={`bb:grid:${row}:${col}`} onMouseEnter={() => setHoveredPin(`bb:grid:${row}:${col}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`bb:grid:${row}:${col}`)}
+                className={`hole cursor-pointer hover:bg-emerald-500/40 transition-colors ${activePin === `bb:grid:${row}:${col}` ? 'ring-1 ring-white' : ''}`}></div>
+            ))
+          ))}
+        </div>
+      </div>
+
+      <div className="power-rail pl-6 mt-2">
+        <div className="rail-line-red"></div>
+        <div className="rail-holes">
+          {Array(60).fill(0).map((_, i) => (
+            <div key={i} data-pin-id={`bb:rail:bot:vcc:${i}`} onMouseEnter={() => setHoveredPin(`bb:rail:bot:vcc:${i}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`bb:rail:bot:vcc:${i}`)}
+              className={`hole cursor-pointer hover:bg-red-500/40 transition-colors ${activePin === `bb:rail:bot:vcc:${i}` ? 'ring-1 ring-white' : ''}`}></div>
+          ))}
+        </div>
+        <div className="rail-line-blue"></div>
+        <div className="rail-holes">
+          {Array(60).fill(0).map((_, i) => (
+            <div key={i} data-pin-id={`bb:rail:bot:gnd:${i}`} onMouseEnter={() => setHoveredPin(`bb:rail:bot:gnd:${i}`)} onMouseLeave={() => setHoveredPin(null)} onClick={() => handlePinClick(`bb:rail:bot:gnd:${i}`)}
+              className={`hole cursor-pointer hover:bg-blue-500/40 transition-colors ${activePin === `bb:rail:bot:gnd:${i}` ? 'ring-1 ring-white' : ''}`}></div>
+          ))}
+        </div>
+      </div>
+    </div>
+  ));
+
 export default function App() {
   const [entities, setEntities] = useState<CircuitEntity[]>([]);
   const [wires, setWires] = useState<Wire[]>([]);
   const [activePin, setActivePin] = useState<string | null>(null);
   const [hoveredPin, setHoveredPin] = useState<string | null>(null);
   const [pinPositions, setPinPositions] = useState<Record<string, {x: number, y: number}>>({});
+  const staticPositionsRef = useRef<Record<string, {x: number, y: number}>>({});
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -97,58 +183,156 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, [isSidebarOpen]);
 
-  const updatePositions = useCallback(() => {
-    const positions: Record<string, {x: number, y: number}> = {};
-    const pins = document.querySelectorAll('[data-pin-id]');
+  const updatePositions = useCallback((forceStatic = false) => {
+    const positions: Record<string, {x: number, y: number}> = { ...staticPositionsRef.current };
     const boardRect = workspaceRef.current?.getBoundingClientRect();
+    const BORDER_WIDTH = 12; // From index.html .pcb-board border
 
     if (boardRect && workspaceRef.current) {
-      pins.forEach(pin => {
+      // If we don't have static positions yet, or we're forcing a refresh
+      if (forceStatic || Object.keys(staticPositionsRef.current).length === 0) {
+        const staticPins = document.querySelectorAll('[data-pin-id]:not([data-pin-id^="ic-"])');
+        staticPins.forEach(pin => {
+          const id = pin.getAttribute('data-pin-id');
+          if (id) {
+            const rect = pin.getBoundingClientRect();
+            positions[id] = {
+              x: (rect.left + rect.width / 2 - boardRect.left) / scale - BORDER_WIDTH,
+              y: (rect.top + rect.height / 2 - boardRect.top) / scale - BORDER_WIDTH
+            };
+          }
+        });
+        staticPositionsRef.current = { ...positions };
+      }
+
+      // Always update dynamic pins (ICs)
+      const dynamicPins = document.querySelectorAll('[data-pin-id^="ic-"]');
+      dynamicPins.forEach(pin => {
         const id = pin.getAttribute('data-pin-id');
         if (id) {
           const rect = pin.getBoundingClientRect();
           positions[id] = {
-            x: (rect.left + rect.width / 2 - boardRect.left) / scale,
-            y: (rect.top + rect.height / 2 - boardRect.top) / scale
+            x: (rect.left + rect.width / 2 - boardRect.left) / scale - BORDER_WIDTH,
+            y: (rect.top + rect.height / 2 - boardRect.top) / scale - BORDER_WIDTH
           };
         }
       });
-      setPinPositions(positions);
+
+      // Only update if we actually found pins to avoid "disappearing wires"
+      if (Object.keys(positions).length > 0) {
+        setPinPositions(positions);
+      }
     }
   }, [scale]);
 
   useEffect(() => {
-    const timer = setInterval(updatePositions, 100);
-    return () => clearInterval(timer);
-  }, [updatePositions]);
+    // Initial static capture after a short delay to ensure DOM is ready
+    const timer = setTimeout(() => updatePositions(true), 500);
+    return () => clearTimeout(timer);
+  }, [scale, isSidebarOpen, updatePositions, entities.length]);
 
-  const getPinValue = useCallback((pid: string, visited = new Set<string>()): number => {
+  useEffect(() => {
+    let rafId: number;
+    const loop = () => {
+      if (draggingId) {
+        updatePositions();
+      }
+      rafId = requestAnimationFrame(loop);
+    };
+    rafId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(rafId);
+  }, [updatePositions, draggingId]);
+
+  const getPinValue = useCallback((pid: string, visited = new Set<string>(), findGnd = false): number => {
     if (!powerOn) return 0;
     
     const basePid = pid.replace(/:[ab]$/, '');
-    if (visited.has(basePid)) return 0;
-    visited.add(basePid);
+    const visitKey = basePid + (findGnd ? ':gnd' : ':val');
+    if (visited.has(visitKey)) return 0;
+    visited.add(visitKey);
 
-    const [eid, type, sub] = basePid.split(':');
-    if (type === 'vcc') return 5;
-    if (type === 'gnd') return 0;
-    if (type === 'clk') return clockState ? 5 : 0;
-    if (type === 'pls') return (sub === '1' ? pulseStates.p1 : pulseStates.p2) ? 5 : 0;
-    if (type === 'sw') return switches[parseInt(sub)] ? 5 : 0;
-    if (type === 'vadj') return voltageValue;
+    const [eid, type, sub, sub2] = basePid.split(':');
     
+    // Check if it's a GND source when looking for GND
+    if (findGnd && type === 'gnd') return 1;
+    // Check if it's a VCC source when looking for Value
+    if (!findGnd) {
+      if (type === 'vcc') return 5;
+      if (type === 'clk') return clockState ? 5 : 0;
+      if (type === 'pls') return (sub === '1' ? pulseStates.p1 : pulseStates.p2) ? 5 : 0;
+      if (type === 'sw') return switches[parseInt(sub)] ? 5 : 0;
+      if (type === 'vadj') return voltageValue;
+    }
+
+    if (eid === 'bb') {
+      // Breadboard internal connections
+      if (type === 'rail') {
+        const [pos, railType] = [sub, sub2];
+        // Connect all holes in the same rail
+        for (let i = 0; i < 60; i++) {
+          const otherPid = `bb:rail:${pos}:${railType}:${i}`;
+          if (otherPid !== pid) {
+            const val = getPinValue(otherPid, visited, findGnd);
+            if (val > 0) return val;
+          }
+        }
+      } else if (type === 'grid') {
+        const [row, col] = [sub, sub2];
+        const rowGroup = ['A', 'B', 'C', 'D', 'E'].includes(row) ? ['A', 'B', 'C', 'D', 'E'] : ['F', 'G', 'H', 'I', 'J'];
+        // Connect all holes in the same column and same row group
+        for (const r of rowGroup) {
+          const otherPid = `bb:grid:${r}:${col}`;
+          if (otherPid !== pid) {
+            const val = getPinValue(otherPid, visited, findGnd);
+            if (val > 0) return val;
+          }
+        }
+
+        // Check if an IC pin is sitting on this breadboard hole
+        const bbPos = pinPositions[pid] as {x: number, y: number};
+        if (bbPos) {
+          for (const [icPid, icPosRaw] of Object.entries(pinPositions)) {
+            const icPos = icPosRaw as {x: number, y: number};
+            if (icPid.includes(':p:')) {
+              const dist = Math.sqrt(Math.pow(bbPos.x - icPos.x, 2) + Math.pow(bbPos.y - icPos.y, 2));
+              if (dist < 8) {
+                const icVal = getPinValue(icPid, visited, findGnd);
+                if (icVal > 0) return icVal;
+              }
+            }
+          }
+        }
+      }
+    }
+
     const ent = entities.find(e => e.id === eid);
     if (type === 'p' && ent?.gateType) {
+      // Check if this IC pin is sitting on a breadboard hole
+      const pinPos = pinPositions[pid] as {x: number, y: number};
+      if (pinPos) {
+        for (const [bbPid, bbPosRaw] of Object.entries(pinPositions)) {
+          const bbPos = bbPosRaw as {x: number, y: number};
+          if (bbPid.startsWith('bb:grid:')) {
+            const dist = Math.sqrt(Math.pow(pinPos.x - bbPos.x, 2) + Math.pow(pinPos.y - bbPos.y, 2));
+            if (dist < 8) { // If very close, they are connected
+              const bbVal = getPinValue(bbPid, visited, findGnd);
+              if (bbVal > 0) return bbVal;
+            }
+          }
+        }
+      }
+
       const pinNum = parseInt(sub);
       const ds = GATE_DATASHEET[ent.gateType];
-      const hasVcc = wires.some(w => (w.from === `${eid}:p:${ds.pins.vcc}` || w.to === `${eid}:p:${ds.pins.vcc}`));
-      const hasGnd = wires.some(w => (w.from === `${eid}:p:${ds.pins.gnd}` || w.to === `${eid}:p:${ds.pins.gnd}`));
-      
-      if (pinNum === ds.pins.vcc) return 5;
-      if (pinNum === ds.pins.gnd) return 0;
-      
-      if (ds.pins.outputs.includes(pinNum)) {
-        if (!hasVcc || !hasGnd) return 0;
+
+      // Special handling for IC outputs
+      if (!findGnd && ds.pins.outputs.includes(pinNum)) {
+        // Gates need power to function
+        const vccVal = getPinValue(`${eid}:p:${ds.pins.vcc}`, new Set([...visited]), false);
+        const gndVal = getPinValue(`${eid}:p:${ds.pins.gnd}`, new Set([...visited]), true);
+        
+        if (vccVal < 4.5 || gndVal === 0) return 0;
+
         const outIdx = ds.pins.outputs.indexOf(pinNum);
         const inPins = ds.pins.inputs[outIdx];
         const inVals = inPins.map(p => getPinValue(`${eid}:p:${p}`, new Set([...visited, pid])));
@@ -171,7 +355,7 @@ export default function App() {
     }
 
     // 4-CH Driver Panel Logic (ULN2003 Sinking)
-    if (eid === 'drv4' && type === 'out') {
+    if (!findGnd && eid === 'drv4' && type === 'out') {
       const idx = parseInt(sub);
       const inVal = getPinValue(`drv4:in:${idx}`, new Set([...visited, pid]));
       return Math.max(0, 5 - inVal);
@@ -187,12 +371,12 @@ export default function App() {
       for (const w of wires) {
         const other = w.from === p ? w.to : (w.to === p ? w.from : null);
         if (other) {
-          maxVal = Math.max(maxVal, getPinValue(other, visited));
+          maxVal = Math.max(maxVal, getPinValue(other, visited, findGnd));
         }
       }
     }
     return maxVal;
-  }, [entities, wires, clockState, pulseStates, switches, voltageValue, powerOn]);
+  }, [entities, wires, clockState, pulseStates, switches, voltageValue, powerOn, pinPositions]);
 
   const circuitStatus = useMemo(() => {
     const ledStates = Array(8).fill(0).map((_, i) => getPinValue(`led-unit:in:${i}:a`));
@@ -279,57 +463,6 @@ export default function App() {
       setDragOffset({ x: curX - ent.position.x, y: curY - ent.position.y });
     }
   };
-
-  const BreadboardUnit = () => (
-    <div className="breadboard-unit relative">
-      {/* Column Numbers */}
-      <div className="flex pl-6 gap-[3px] mb-1">
-        {Array(60).fill(0).map((_, i) => (
-          <div key={i} className="w-[12px] text-[8px] text-black/60 text-center font-bold">
-            {(i + 1) % 5 === 0 || i === 0 ? i + 1 : ''}
-          </div>
-        ))}
-      </div>
-
-      <div className="power-rail pl-6">
-        <div className="rail-line-red"></div>
-        <div className="rail-holes">{Array(60).fill(0).map((_, i) => <div key={i} className="hole"></div>)}</div>
-        <div className="rail-line-blue"></div>
-        <div className="rail-holes">{Array(60).fill(0).map((_, i) => <div key={i} className="hole"></div>)}</div>
-      </div>
-
-      <div className="flex gap-2">
-        {/* Row Letters A-E */}
-        <div className="flex flex-col gap-[3px] pt-[2px]">
-          {['A', 'B', 'C', 'D', 'E'].map(l => (
-            <div key={l} className="h-[12px] w-[12px] text-[8px] text-black/60 flex items-center justify-center font-bold">{l}</div>
-          ))}
-        </div>
-        <div className="hole-grid">{Array(60 * 5).fill(0).map((_, i) => <div key={i} className="hole"></div>)}</div>
-      </div>
-
-      <div className="h-6 bg-black/5 rounded-sm mx-6 flex items-center">
-        <div className="w-full h-[1px] bg-black/10"></div>
-      </div>
-
-      <div className="flex gap-2">
-        {/* Row Letters F-J */}
-        <div className="flex flex-col gap-[3px] pt-[2px]">
-          {['F', 'G', 'H', 'I', 'J'].map(l => (
-            <div key={l} className="h-[12px] w-[12px] text-[8px] text-black/60 flex items-center justify-center font-bold">{l}</div>
-          ))}
-        </div>
-        <div className="hole-grid">{Array(60 * 5).fill(0).map((_, i) => <div key={i} className="hole"></div>)}</div>
-      </div>
-
-      <div className="power-rail pl-6">
-        <div className="rail-line-red"></div>
-        <div className="rail-holes">{Array(60).fill(0).map((_, i) => <div key={i} className="hole"></div>)}</div>
-        <div className="rail-line-blue"></div>
-        <div className="rail-holes">{Array(60).fill(0).map((_, i) => <div key={i} className="hole"></div>)}</div>
-      </div>
-    </div>
-  );
 
   return (
     <div className={`h-screen w-screen bg-black flex flex-row overflow-hidden transition-colors duration-200 ${shortCircuitAlert ? 'bg-red-950/40' : ''}`}>
@@ -445,8 +578,37 @@ export default function App() {
                 const curY = (e.clientY - rect.top) / scale;
                 setMousePos({ x: curX, y: curY });
                 if (draggingId) {
+                  let finalX = curX - dragOffset.x;
+                  let finalY = curY - dragOffset.y;
+
+                  // Snapping logic for ICs on Breadboard
+                  const ent = entities.find(e => e.id === draggingId);
+                  if (ent?.type === EntityType.GATE) {
+                    let nearestHole = null;
+                    let minDist = 30;
+
+                    Object.entries(pinPositions).forEach(([pid, posRaw]) => {
+                      const pos = posRaw as {x: number, y: number};
+                      if (pid.startsWith('bb:grid:F:')) {
+                        // Pin 1 is at IC relative x=6.6, y=42.9 (center of pin with 1.1 scale)
+                        // Body top is at 0. Pin 1 center is at (33 + 6) * 1.1 = 42.9
+                        const dist = Math.sqrt(Math.pow(pos.x - (finalX + 6.6), 2) + Math.pow(pos.y - (finalY + 42.9), 2));
+                        if (dist < minDist) {
+                          minDist = dist;
+                          nearestHole = pos;
+                        }
+                      }
+                    });
+
+                    if (nearestHole) {
+                      // Snap IC so pin 1 is at nearestHole
+                      finalX = nearestHole.x - 6.6;
+                      finalY = nearestHole.y - 42.9;
+                    }
+                  }
+
                   setEntities(entities.map(ent => ent.id === draggingId ? {
-                    ...ent, position: { x: curX - dragOffset.x, y: curY - dragOffset.y }
+                    ...ent, position: { x: finalX, y: finalY }
                   } : ent));
                 }
               }
@@ -558,7 +720,7 @@ export default function App() {
 
             {/* Middle Center: Breadboard */}
             <div className="absolute top-[320px] left-1/2 -translate-x-1/2 scale-110">
-                <BreadboardUnit />
+                <BreadboardUnit activePin={activePin} hoveredPin={hoveredPin} handlePinClick={handlePinClick} setHoveredPin={setHoveredPin} />
             </div>
 
             {/* Middle Right: Logic Probe */}
@@ -686,19 +848,28 @@ export default function App() {
             {/* ICs Overlay */}
             {entities.filter(e => e.type === EntityType.GATE).map(ent => (
                 <div key={ent.id} className="absolute z-40" style={{ left: ent.position.x, top: ent.position.y }}>
-                    <div className="ic-realistic w-[120px] h-[240px] p-6 flex flex-col items-center justify-center cursor-move group" onMouseDown={(e) => startDrag(e, ent.id)}>
-                        <div className="absolute left-[-30px] top-8 bottom-8 flex flex-col justify-between">
-                            {[1,2,3,4,5,6,7].map(p => (
-                                <div key={p} data-pin-id={`${ent.id}:p:${p}`} onMouseEnter={() => setHoveredPin(`${ent.id}:p:${p}`)} onMouseLeave={() => setHoveredPin(null)} onClick={(e) => { e.stopPropagation(); handlePinClick(`${ent.id}:p:${p}`); }} className={`w-12 h-10 ic-pin rounded-l flex items-center justify-center text-[12px] text-white font-black transition-all ${activePin === `${ent.id}:p:${p}` ? 'bg-white/20 scale-125 ring-1 ring-white' : ''}`}>{p}</div>
-                            ))}
-                        </div>
-                        <div className="absolute right-[-30px] top-8 bottom-8 flex flex-col justify-between">
+                    <div className="ic-realistic w-[102px] h-[33px] flex items-center justify-center cursor-move group relative scale-110 origin-top-left" onMouseDown={(e) => startDrag(e, ent.id)}>
+                        {/* Top Pins (14-8) */}
+                        <div className="absolute top-[-12px] left-0 w-[102px] grid grid-cols-7 gap-[3px]">
                             {[14,13,12,11,10,9,8].map(p => (
-                                <div key={p} data-pin-id={`${ent.id}:p:${p}`} onMouseEnter={() => setHoveredPin(`${ent.id}:p:${p}`)} onMouseLeave={() => setHoveredPin(null)} onClick={(e) => { e.stopPropagation(); handlePinClick(`${ent.id}:p:${p}`); }} className={`w-12 h-10 ic-pin rounded-r flex items-center justify-center text-[12px] text-white font-black transition-all ${activePin === `${ent.id}:p:${p}` ? 'bg-white/20 scale-125 ring-1 ring-white' : ''}`}>{p}</div>
+                                <div key={p} data-pin-id={`${ent.id}:p:${p}`} onMouseEnter={() => setHoveredPin(`${ent.id}:p:${p}`)} onMouseLeave={() => setHoveredPin(null)} onClick={(e) => { e.stopPropagation(); handlePinClick(`${ent.id}:p:${p}`); }} 
+                                  className={`w-[12px] h-[12px] bg-zinc-400 rounded-t border-x border-t border-black/20 transition-all hover:bg-emerald-500/60 ${activePin === `${ent.id}:p:${p}` ? 'bg-emerald-500 ring-2 ring-white z-10' : ''}`}></div>
                             ))}
                         </div>
-                        <div className="rotate-90 text-black font-black tracking-widest text-2xl">{GATE_DATASHEET[ent.gateType!].model}</div>
-                        <button onClick={(e) => { e.stopPropagation(); setEntities(entities.filter(x => x.id !== ent.id)); setWires(wires.filter(w => !w.from.includes(ent.id) && !w.to.includes(ent.id))); }} className="absolute -bottom-12 opacity-0 group-hover:opacity-100 bg-red-600 text-white text-[12px] px-5 py-2.5 rounded-full font-bold shadow-lg transition-all hover:bg-red-500">DELETE</button>
+                        {/* Bottom Pins (1-7) */}
+                        <div className="absolute bottom-[-12px] left-0 w-[102px] grid grid-cols-7 gap-[3px]">
+                            {[1,2,3,4,5,6,7].map(p => (
+                                <div key={p} data-pin-id={`${ent.id}:p:${p}`} onMouseEnter={() => setHoveredPin(`${ent.id}:p:${p}`)} onMouseLeave={() => setHoveredPin(null)} onClick={(e) => { e.stopPropagation(); handlePinClick(`${ent.id}:p:${p}`); }} 
+                                  className={`w-[12px] h-[12px] bg-zinc-400 rounded-b border-x border-b border-black/20 transition-all hover:bg-emerald-500/60 ${activePin === `${ent.id}:p:${p}` ? 'bg-emerald-500 ring-2 ring-white z-10' : ''}`}></div>
+                            ))}
+                        </div>
+                        {/* IC Body */}
+                        <div className="w-full h-full bg-[#111] border border-[#333] rounded-sm flex items-center justify-center relative overflow-hidden">
+                            <div className="text-white/90 font-black tracking-tighter text-[9px] whitespace-nowrap z-10">{GATE_DATASHEET[ent.gateType!].model}</div>
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-3 bg-black/60 rounded-r-full border-r border-white/10"></div>
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
+                        </div>
+                        <button onClick={(e) => { e.stopPropagation(); setEntities(entities.filter(x => x.id !== ent.id)); setWires(wires.filter(w => !w.from.includes(ent.id) && !w.to.includes(ent.id))); }} className="absolute -bottom-10 opacity-0 group-hover:opacity-100 bg-red-600 text-white text-[9px] px-3 py-1.5 rounded shadow-xl transition-all hover:bg-red-500 font-bold z-50">DELETE IC</button>
                     </div>
                 </div>
             ))}
