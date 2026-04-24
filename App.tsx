@@ -869,7 +869,7 @@ export default function App() {
                             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-3 bg-black/60 rounded-r-full border-r border-white/10"></div>
                             <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none"></div>
                         </div>
-                        <button onClick={(e) => { e.stopPropagation(); setEntities(entities.filter(x => x.id !== ent.id)); setWires(wires.filter(w => !w.from.includes(ent.id) && !w.to.includes(ent.id))); }} className="absolute -bottom-10 opacity-0 group-hover:opacity-100 bg-red-600 text-white text-[9px] px-3 py-1.5 rounded shadow-xl transition-all hover:bg-red-500 font-bold z-50">DELETE IC</button>
+                        <button onClick={(e) => { e.stopPropagation(); setEntities(entities.filter(x => x.id !== ent.id)); setWires(wires.filter(w => !w.from.includes(ent.id) && !w.to.includes(ent.id))); }} className="absolute -right-2 translate-x-full top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 bg-red-600 text-white text-[9px] px-2 py-1.5 rounded-r shadow-xl transition-all hover:bg-red-500 font-bold z-50 whitespace-nowrap border-l border-white/20">DELETE</button>
                     </div>
                 </div>
             ))}
