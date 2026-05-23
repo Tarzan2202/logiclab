@@ -447,9 +447,114 @@ export default function App() {
 
   const addIC = (type: GateType) => {
     const id = `ic-${Math.random().toString(36).substr(2, 4)}`;
+    
+    // Find occupied columns on Row F of the breadboard
+    const occupied = new Set<number>();
+    entities.forEach(ent => {
+      if (ent.type === EntityType.GATE) {
+        // Pin 1 is at ent.position.x + 6.6, ent.position.y + 42.9
+        const pin1X = ent.position.x + 6.6;
+        const pin1Y = ent.position.y + 42.9;
+        let minD = Infinity;
+        let snapCol = -1;
+        
+        for (let c = 0; c < 60; c++) {
+          const hPos = pinPositions[`bb:grid:F:${c}`];
+          if (hPos) {
+            const d = Math.sqrt(Math.pow(hPos.x - pin1X, 2) + Math.pow(hPos.y - pin1Y, 2));
+            if (d < minD) {
+              minD = d;
+              snapCol = c;
+            }
+          }
+        }
+        
+        if (snapCol !== -1 && minD < 30) {
+          for (let i = 0; i < 7; i++) {
+            occupied.add(snapCol + i);
+          }
+        }
+      }
+    });
+
+    // Try standard columns first to keep ICs beautifully aligned at standard placements
+    let targetCol = -1;
+    const STANDARD_IC_COLS = [4, 14, 24, 34, 44]; // col 5, 15, 25, 35, 45 (0-indexed: 4, 14, 24, 34, 44)
+    for (const col of STANDARD_IC_COLS) {
+      let isFree = true;
+      for (let i = 0; i < 7; i++) {
+        if (occupied.has(col + i)) {
+          isFree = false;
+          break;
+        }
+      }
+      if (isFree) {
+        targetCol = col;
+        break;
+      }
+    }
+
+    // Fallback: search for any contiguous 7-column slot from index 1 to 53
+    if (targetCol === -1) {
+      for (let c = 1; c <= 53; c++) {
+        let isFree = true;
+        for (let i = 0; i < 7; i++) {
+          if (occupied.has(c + i)) {
+            isFree = false;
+            break;
+          }
+        }
+        if (isFree) {
+          targetCol = c;
+          break;
+        }
+      }
+    }
+
+    // Absolute fallback search starting from index 0
+    if (targetCol === -1) {
+      let isFree = true;
+      for (let i = 0; i < 7; i++) {
+        if (occupied.has(i)) {
+          isFree = false;
+          break;
+        }
+      }
+      if (isFree) {
+        targetCol = 0;
+      }
+    }
+
+    // Default position values in case breadboard pins are not loaded yet
+    let spawnX = 640; // Default center area of breadboard
+    let spawnY = 320 + 20 + 44; // Default aligned to F column
+    
+    if (targetCol !== -1) {
+      const targetHole = pinPositions[`bb:grid:F:${targetCol}`];
+      if (targetHole) {
+        spawnX = targetHole.x - 6.6;
+        spawnY = targetHole.y - 42.9;
+      } else {
+        // Calculate relative offset based on any existing loaded column coordinate
+        let refHole = null;
+        let refColIdx = -1;
+        for (let c = 0; c < 60; c++) {
+          if (pinPositions[`bb:grid:F:${c}`]) {
+            refHole = pinPositions[`bb:grid:F:${c}`];
+            refColIdx = c;
+            break;
+          }
+        }
+        if (refHole && refColIdx !== -1) {
+          spawnX = refHole.x + (targetCol - refColIdx) * 16.5 - 6.6;
+          spawnY = refHole.y - 42.9;
+        }
+      }
+    }
+
     setEntities([...entities, {
       id, type: EntityType.GATE, gateType: type,
-      position: { x: 100, y: BOARD_HEIGHT / 2 - 120 } 
+      position: { x: spawnX, y: spawnY } 
     }]);
   };
 
