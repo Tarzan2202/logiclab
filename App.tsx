@@ -109,6 +109,7 @@ export default function App() {
   const [scale, setScale] = useState(1);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [shortCircuitAlert, setShortCircuitAlert] = useState(false);
+  const [icLimitAlert, setIcLimitAlert] = useState(false);
   const [selectedGateInfo, setSelectedGateInfo] = useState<GateType | null>(null);
   const [powerOn, setPowerOn] = useState(false);
   
@@ -446,6 +447,13 @@ export default function App() {
   };
 
   const addIC = (type: GateType) => {
+    // Check if there are already 4 ICs on the board
+    const currentICs = entities.filter(e => e.type === EntityType.GATE);
+    if (currentICs.length >= 4) {
+      setIcLimitAlert(true);
+      return;
+    }
+
     const id = `ic-${Math.random().toString(36).substr(2, 4)}`;
     
     // Find occupied columns on Row F of the breadboard
@@ -479,7 +487,7 @@ export default function App() {
 
     // Try standard columns first to keep ICs beautifully aligned at standard placements
     let targetCol = -1;
-    const STANDARD_IC_COLS = [4, 14, 24, 34, 44]; // col 5, 15, 25, 35, 45 (0-indexed: 4, 14, 24, 34, 44)
+    const STANDARD_IC_COLS = [7, 20, 33, 46]; // Perfectly balanced 4-IC placement layout across 60 columns
     for (const col of STANDARD_IC_COLS) {
       let isFree = true;
       for (let i = 0; i < 7; i++) {
@@ -622,6 +630,38 @@ export default function App() {
            <div className="bg-red-600 text-white px-10 py-5 rounded-full font-black text-4xl shadow-[0_0_100px_red] border-4 border-white uppercase italic tracking-tighter">
              Short Circuit Detected!
            </div>
+        </div>
+      )}
+
+      {/* IC Limit Alert Modal */}
+      {icLimitAlert && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-[#0d0d0d] border border-red-500/30 rounded-2xl shadow-[0_0_50px_rgba(239,68,68,0.2)] overflow-hidden animate-in zoom-in duration-300">
+            <div className="p-5 border-b border-red-500/10 flex items-center gap-4 bg-gradient-to-r from-red-500/10 to-transparent">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+                <i className="fas fa-exclamation-triangle text-xl"></i>
+              </span>
+              <div>
+                <h3 className="text-red-500 font-black text-2xl italic tracking-tighter leading-none">เกินขีดจำกัดจำนวนไอซี</h3>
+                <p className="text-red-500/50 text-[10px] font-mono tracking-widest uppercase mt-1">IC LIMIT EXCEEDED</p>
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-5">
+              <div className="p-4 bg-black/60 rounded-xl border border-white/5 font-medium text-white/90 leading-relaxed text-sm select-none">
+                ระบบบอร์ดทดลองสามารถรองรับการติดตั้งไอซีได้สูงสุด <span className="text-yellow-400 font-black text-base">4 ตัว</span> เท่านั้น หากท่านต้องการติดตั้งไอซีตัวใหม่เพิ่มเติม กรุณาทำการลบไอซีที่เชื่อมต่ออยู่และไม่ได้ใช้งานออกก่อนดำเนินรายการ
+              </div>
+              
+              <div className="flex justify-end">
+                <button 
+                  onClick={() => setIcLimitAlert(false)}
+                  className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-lg shadow-red-950/40 border border-red-500/20 hover:border-red-400/30 transition-all active:scale-95 duration-100"
+                >
+                  ตกลง (OK)
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
