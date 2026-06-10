@@ -112,6 +112,7 @@ export default function App() {
   const [icLimitAlert, setIcLimitAlert] = useState(false);
   const [selectedGateInfo, setSelectedGateInfo] = useState<GateType | null>(null);
   const [powerOn, setPowerOn] = useState(false);
+  const [hasTripped, setHasTripped] = useState(false);
   
   // Logic Probe States
   const [probeConnectedPin, setProbeConnectedPin] = useState<string | null>(null);
@@ -390,6 +391,280 @@ export default function App() {
     return { ledStates, segStates, buzzerActive, probeVal, wireStatus: wires.map(w => getPinValue(w.from) >= 2.5 || getPinValue(w.to) >= 2.5) };
   }, [getPinValue, wires, probeConnectedPin]);
 
+  // Analyze network connectivity, identifying fault states (Blow vs. Warning)
+  const structuralConditions = useMemo(() => {
+    const adj: Record<string, string[]> = {};
+    const addEdge = (p1: string, p2: string) => {
+      if (!adj[p1]) adj[p1] = [];
+      if (!adj[p2]) adj[p2] = [];
+      adj[p1].push(p2);
+      adj[p2].push(p1);
+    };
+
+    // 1. Wires form connections
+    wires.forEach(w => {
+      addEdge(w.from, w.to);
+    });
+
+    const allActivePins = new Set<string>();
+    wires.forEach(w => {
+      allActivePins.add(w.from);
+      allActivePins.add(w.to);
+    });
+
+    // 2. Breadboard row-groups & rails
+    const colsGroupAE: Record<number, string[]> = {};
+    const colsGroupFJ: Record<number, string[]> = {};
+    const railTopVcc: string[] = [];
+    const railTopGnd: string[] = [];
+    const railBotVcc: string[] = [];
+    const railBotGnd: string[] = [];
+
+    allActivePins.forEach(pin => {
+      if (pin.startsWith('bb:grid:')) {
+        const parts = pin.split(':');
+        const row = parts[2];
+        const col = parseInt(parts[3]);
+        if (['A', 'B', 'C', 'D', 'E'].includes(row)) {
+          if (!colsGroupAE[col]) colsGroupAE[col] = [];
+          colsGroupAE[col].push(pin);
+        } else {
+          if (!colsGroupFJ[col]) colsGroupFJ[col] = [];
+          colsGroupFJ[col].push(pin);
+        }
+      } else if (pin.startsWith('bb:rail:top:vcc:')) {
+        railTopVcc.push(pin);
+      } else if (pin.startsWith('bb:rail:top:gnd:')) {
+        railTopGnd.push(pin);
+      } else if (pin.startsWith('bb:rail:bot:vcc:')) {
+        railBotVcc.push(pin);
+      } else if (pin.startsWith('bb:rail:bot:gnd:')) {
+        railBotGnd.push(pin);
+      }
+    });
+
+    Object.values(colsGroupAE).forEach(pins => {
+      for (let i = 0; i < pins.length - 1; i++) addEdge(pins[i], pins[i+1]);
+    });
+    Object.values(colsGroupFJ).forEach(pins => {
+      for (let i = 0; i < pins.length - 1; i++) addEdge(pins[i], pins[i+1]);
+    });
+
+    for (let i = 0; i < railTopVcc.length - 1; i++) addEdge(railTopVcc[i], railTopVcc[i+1]);
+    for (let i = 0; i < railTopGnd.length - 1; i++) addEdge(railTopGnd[i], railTopGnd[i+1]);
+    for (let i = 0; i < railBotVcc.length - 1; i++) addEdge(railBotVcc[i], railBotVcc[i+1]);
+    for (let i = 0; i < railBotGnd.length - 1; i++) addEdge(railBotGnd[i], railBotGnd[i+1]);
+
+    // 3. IC Snaps
+    const icPinsToSnap: string[] = [];
+    Object.keys(pinPositions).forEach(k => {
+      if (k.includes(':p:')) {
+        icPinsToSnap.push(k);
+      }
+    });
+
+    icPinsToSnap.forEach(icP => {
+      const pinPos = pinPositions[icP] as { x: number; y: number } | undefined;
+      if (!pinPos) return;
+
+      // Find the closest grid pin
+      let closestGridPin: string | null = null;
+      let minDist = 8; // distance threshold in pixels
+      for (const [k, pPosRaw] of Object.entries(pinPositions)) {
+        if (k.startsWith('bb:grid:') && pPosRaw) {
+          const pPos = pPosRaw as { x: number; y: number };
+          const d = Math.sqrt(Math.pow(pinPos.x - pPos.x, 2) + Math.pow(pinPos.y - pPos.y, 2));
+          if (d < minDist) {
+            minDist = d;
+            closestGridPin = k;
+          }
+        }
+      }
+
+      if (closestGridPin) {
+        // Decode row/col
+        const parts = closestGridPin.split(':');
+        const row = parts[2];
+        const col = parseInt(parts[3]);
+        const isAE = ['A', 'B', 'C', 'D', 'E'].includes(row);
+        const activeGroup = isAE ? (colsGroupAE[col] || []) : (colsGroupFJ[col] || []);
+
+        if (activeGroup.length > 0) {
+          allActivePins.add(icP);
+          activeGroup.forEach(activePin => {
+            addEdge(icP, activePin);
+          });
+        }
+      }
+    });
+
+    const isVccSource = (p: string) => {
+      return p.includes('vcc') || 
+             p.startsWith('vadj:') || 
+             p.startsWith('clk:') || 
+             p.startsWith('pls:') || 
+             p.startsWith('sw-unit:sw:') ||
+             p.includes(':p:14'); // VCC pin of IC
+    };
+
+    const isGndSource = (p: string) => {
+      return p.includes('gnd') || p.includes(':p:7'); // GND pin of IC
+    };
+
+    const isLedOrSegmentPin = (p: string) => {
+      return p.startsWith('led-unit:') || p.startsWith('seg:');
+    };
+
+    const isBuzzerPin = (p: string) => {
+      return p.startsWith('buz:');
+    };
+
+    // Find connected components
+    const visited = new Set<string>();
+    const nets: Array<{
+      pins: Set<string>;
+      vccSources: string[];
+      gndSources: string[];
+      ledOrSegPins: string[];
+      buzzerPins: string[];
+      icOutputs: string[];
+      icGates: Set<string>;
+    }> = [];
+
+    allActivePins.forEach(startPin => {
+      if (!visited.has(startPin)) {
+        const pins = new Set<string>();
+        const queue = [startPin];
+        visited.add(startPin);
+
+        while (queue.length > 0) {
+          const curr = queue.shift()!;
+          pins.add(curr);
+
+          const neighbors = adj[curr] || [];
+          neighbors.forEach(nbr => {
+            if (!visited.has(nbr)) {
+              visited.add(nbr);
+              queue.push(nbr);
+            }
+          });
+        }
+
+        const vccSources: string[] = [];
+        const gndSources: string[] = [];
+        const ledOrSegPins: string[] = [];
+        const buzzerPins: string[] = [];
+        const icOutputs: string[] = [];
+        const icGates = new Set<string>();
+
+        pins.forEach(p => {
+          if (isVccSource(p)) vccSources.push(p);
+          if (isGndSource(p)) gndSources.push(p);
+          if (isLedOrSegmentPin(p)) ledOrSegPins.push(p);
+          if (isBuzzerPin(p)) buzzerPins.push(p);
+
+          if (p.includes(':p:')) {
+            const parts = p.split(':');
+            const icId = parts[0];
+            const pnum = parseInt(parts[2]);
+            const ent = entities.find(e => e.id === icId);
+            if (ent && ent.gateType) {
+              icGates.add(icId);
+              const ds = GATE_DATASHEET[ent.gateType];
+              if (ds.pins.outputs.includes(pnum)) {
+                icOutputs.push(p);
+              }
+            }
+          }
+        });
+
+        nets.push({ pins, vccSources, gndSources, ledOrSegPins, buzzerPins, icOutputs, icGates });
+      }
+    });
+
+    return wires.map(w => {
+      const net = nets.find(n => n.pins.has(w.from));
+      if (!net) return 'normal';
+
+      // 1. Phung - Blown (Direct/indirect shorting of VCC and GND)
+      // Only trigger if we literally connect VCC power rail directly to GND power rail
+      // or if direct VCC line hits direct GND line
+      const hasDirectVcc = net.vccSources.some(s => s.includes('vcc') || s.includes(':p:14'));
+      const hasDirectGnd = net.gndSources.some(s => s.includes('gnd') || s.includes(':p:7'));
+      if (hasDirectVcc && hasDirectGnd) {
+        return 'blown';
+      }
+
+      // 2. Tern - Warning (E.g. Connecting 5V directly to LED without logic gate/IC/load isolation)
+      const hasPowerGnd = net.vccSources.length > 0 || net.gndSources.length > 0;
+      const hasLEDorBuzzer = net.ledOrSegPins.length > 0 || net.buzzerPins.length > 0;
+      if (hasPowerGnd && hasLEDorBuzzer && net.icGates.size === 0) {
+        return 'warning';
+      }
+
+      // 3. Warning: IC Pin 14 (VCC) or Pin 7 (GND) connected to inappropriate controls (LED, Segment, Switch, Clock, Pulse)
+      const hasIcPower14 = Array.from(net.pins).some(p => p.includes(':p:14'));
+      const hasIcPower7 = Array.from(net.pins).some(p => p.includes(':p:7'));
+      if (hasIcPower14 || hasIcPower7) {
+        const hasSwitchOrSignals = Array.from(net.pins).some(p => 
+          p.startsWith('sw-unit:') ||
+          p.startsWith('sw:') ||
+          p.startsWith('clk:') ||
+          p.startsWith('pls:') ||
+          p.startsWith('led-unit:') ||
+          p.startsWith('seg:') ||
+          p.startsWith('buz:')
+        );
+        if (hasSwitchOrSignals) {
+          return 'warning';
+        }
+      }
+
+      // Connection collision warning: e.g. two outputs tied together
+      const totalDrivers = net.icOutputs.length + net.vccSources.length + net.gndSources.length;
+      if (totalDrivers > 1) {
+        let activeCollision = false;
+        if (net.icOutputs.length > 1) {
+          activeCollision = true;
+        }
+        if (net.icOutputs.length > 0 && (net.vccSources.some(s => s.startsWith('clk') || s.startsWith('sw') || s.startsWith('pls')) || net.gndSources.length > 0)) {
+          activeCollision = true;
+        }
+        if (activeCollision) {
+          return 'warning';
+        }
+      }
+
+      return 'normal';
+    });
+  }, [wires, entities, pinPositions]);
+
+  const wireConditions = useMemo(() => {
+    return structuralConditions.map((cond) => {
+      if (cond === 'blown') {
+        if (powerOn || hasTripped) {
+          return 'blown';
+        }
+        return 'normal';
+      }
+      return cond;
+    });
+  }, [structuralConditions, powerOn, hasTripped]);
+
+  // Dynamic feedback and power-off trip for short-circuits (blown wires)
+  useEffect(() => {
+    const isCurrentlyShorted = structuralConditions.some(c => c === 'blown');
+    if (hasTripped && !isCurrentlyShorted) {
+      setHasTripped(false);
+    }
+
+    if (powerOn && isCurrentlyShorted) {
+      setPowerOn(false);
+      setHasTripped(true);
+      playAlertSound('short');
+    }
+  }, [structuralConditions, powerOn, hasTripped]);
+
   // Handle Buzzer Sound
   useEffect(() => {
     if (!audioCtxRef.current || !buzzerGainRef.current) return;
@@ -430,17 +705,7 @@ export default function App() {
     } else {
       if (activePin === pinId) { setActivePin(null); return; }
 
-      const isVcc = (p: string) => p.includes('vcc') || p.includes('p:14');
-      const isGnd = (p: string) => p.includes('gnd') || p.includes('p:7');
-
-      if ((isVcc(activePin) && isGnd(pinId)) || (isGnd(activePin) && isVcc(pinId))) {
-        setShortCircuitAlert(true);
-        playAlertSound('short'); 
-        setTimeout(() => setShortCircuitAlert(false), 800);
-        setActivePin(null);
-        return;
-      }
-
+      // Connect the wire directly regardless of any faults, colors will represent states
       setWires([...wires, { from: activePin, to: pinId }]);
       setActivePin(null);
     }
@@ -578,7 +843,7 @@ export default function App() {
   };
 
   return (
-    <div className={`h-screen w-screen bg-black flex flex-row overflow-hidden transition-colors duration-200 ${shortCircuitAlert ? 'bg-red-950/40' : ''}`}>
+    <div className="h-screen w-screen bg-black flex flex-row overflow-hidden">
       
       {/* IC Info Modal */}
       {selectedGateInfo && (
@@ -621,15 +886,6 @@ export default function App() {
               </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Short Circuit Overlay */}
-      {shortCircuitAlert && (
-        <div className="fixed inset-0 z-[1000] pointer-events-none flex items-center justify-center bg-red-600/10 animate-pulse">
-           <div className="bg-red-600 text-white px-10 py-5 rounded-full font-black text-4xl shadow-[0_0_100px_red] border-4 border-white uppercase italic tracking-tighter">
-             Short Circuit Detected!
-           </div>
         </div>
       )}
 
@@ -1026,13 +1282,63 @@ export default function App() {
                     const start = pinPositions[wire.from];
                     const end = pinPositions[wire.to];
                     if (!start || !end) return null;
-                    const isHigh = circuitStatus.wireStatus[idx];
-                    let strokeColor = isHigh ? '#fbbf24' : '#64748b';
-                    if (wire.from.includes('vcc') || wire.to.includes('vcc')) strokeColor = '#ef4444';
-                    if (wire.from.includes('gnd') || wire.to.includes('gnd')) strokeColor = '#0f172a';
+                    const isHigh = circuitStatus.wireStatus[idx] && powerOn;
+                    const status = wireConditions[idx]; // 'blown' | 'warning' | 'normal'
+
+                    let strokeColor = '#475569'; // default unpowered steel gray
+                    let shadowClass = '';
+                    let extraClass = '';
+
+                    if (status === 'blown') {
+                      strokeColor = '#ef4444';
+                      shadowClass = 'animate-pulse drop-shadow-[0_0_12px_rgba(239,68,68,0.9)] opacity-100';
+                    } else if (status === 'warning') {
+                      strokeColor = '#f97316';
+                      shadowClass = 'drop-shadow-[0_0_8px_rgba(249,115,22,0.7)] opacity-95';
+                    } else if (isHigh) {
+                      // Powered Up state (carrying electrical potential)
+                      if (wire.from.includes('vcc') || wire.to.includes('vcc')) {
+                        strokeColor = '#ef4444'; // Bright glowing red for active VCC
+                        shadowClass = 'drop-shadow-[0_0_10px_rgba(239,68,68,0.7)]';
+                      } else {
+                        strokeColor = '#fbbf24'; // Glowing golden amber for active logic high signals
+                        shadowClass = 'drop-shadow-[0_0_10px_rgba(251,191,36,0.7)]';
+                      }
+                      extraClass = 'wire-active opacity-100';
+                    } else {
+                      // Unpowered state / Low Logic / GND or Power is Off (no electrical voltage/charge)
+                      if (wire.from.includes('vcc') || wire.to.includes('vcc')) {
+                        strokeColor = '#7f1d1d'; // dark muted red VCC (under-energized)
+                      } else if (wire.from.includes('gnd') || wire.to.includes('gnd')) {
+                        strokeColor = '#0f172a'; // solid dark black for GND
+                      } else {
+                        strokeColor = '#475569'; // muted steel gray for low signals / unpowered
+                      }
+                      extraClass = 'opacity-65 hover:opacity-100';
+                    }
+
                     return (
-                        <path key={idx} d={`M ${start.x} ${start.y} C ${start.x} ${start.y + 120}, ${end.x} ${end.y - 120}, ${end.x} ${end.y}`} 
-                            fill="none" stroke={strokeColor} strokeWidth="6" strokeLinecap="round" className={`pointer-events-auto cursor-pointer opacity-80 ${isHigh ? 'wire-active shadow-[0_0_10px_rgba(251,191,36,0.5)]' : ''}`} onClick={() => { setWires(wires.filter((_, i) => i !== idx)); }} />
+                        <path 
+                            key={idx} 
+                            d={`M ${start.x} ${start.y} C ${start.x} ${start.y + 120}, ${end.x} ${end.y - 120}, ${end.x} ${end.y}`} 
+                            fill="none" 
+                            stroke={strokeColor} 
+                            strokeWidth="6" 
+                            strokeLinecap="round" 
+                            className={`pointer-events-auto cursor-pointer transition-all duration-300 ${shadowClass} ${extraClass}`} 
+                            strokeDasharray={status === 'warning' ? '8,4' : undefined}
+                            onClick={() => { setWires(wires.filter((_, i) => i !== idx)); }}
+                        >
+                            <title>
+                              {status === 'blown' 
+                                ? 'พัง ( VCC ชน GND ตรง)' 
+                                : status === 'warning' 
+                                ? 'เตือน ( เกิดความผิดพลาดทางวงจร เช่น ต่อไฟตรงเข้า LED, เกิดสัญญาณชนกัน หรือขาจ่ายไฟ VCC/GND ของไอซีต่อสายผิดประเภท)' 
+                                : isHigh 
+                                ? 'สายไฟนำสัญญาณ High (Active / มีกระแสไฟ)' 
+                                : 'สายไฟปกติ Low / GND (Inactive / ไม่มีกระแสไฟ)'}
+                            </title>
+                        </path>
                     );
                 })}
                 
